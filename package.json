@@ -1,0 +1,20 @@
+{
+  "name": "nanobridge",
+  "version": "1.0.0",
+  "description": "A microblog application",
+  "author": "Khinenw",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "nuxt": "^2.0.0"
+  },
+  "devDependencies": {
+    "less": "^3.9.0",
+    "less-loader": "^4.1.0"
+  }
+}
