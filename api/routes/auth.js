@@ -1,42 +1,28 @@
-export default {
-	name: 'auth',
-	route: '/auth'
+const {Router} = require('express');
 
-	init() {},
+const router = new Router();
 
-	get: ctx => {
+router.get('/', (req, res) => {
+	res.json({
+		ok: true,
+		result: req.authState
+	});
+});
 
-	},
-
-	post: (ctx, {id, password}) => {
-
-	},
-
-	delete: ctx => {
-		delete ctx.username;
-		ctx.authState = false;
-		res.cookie('Authentication', '', {
-			expires: new Date(0)
-		});
+router.post('/', (req, res) => {
+	const {username, password} = req.body;
+	if(typeof username !== 'string' || typeof password !== 'string') {
+		res.status(400).json({ok: false});
+		return;
 	}
-};
 
-setLoggedIn({ctx, res}, username) {
-	const token = await promisify(jwt.sign)({username}, config.secret, {
-		algorithm: 'HS256'
-	});
+	req.database.
+});
 
-	ctx.username = username;
-	ctx.authState = true;
-	res.cookie('Authentication', token, {
-		maxAge: 1000 * 60 * 60 * 24 * 365
-	});
-},
-
-setLoggedOut({ctx, res}) {
-	delete ctx.username;
-	ctx.authState = false;
+router.delete('/', (req, res) => {
 	res.cookie('Authentication', '', {
 		expires: new Date(0)
 	});
-}
+});
+
+module.exports = router;

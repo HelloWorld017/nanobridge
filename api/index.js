@@ -3,9 +3,11 @@ const context = require('./context');
 const cookieParser = require('cookie-parser');
 const express = require('express');
 const fs = require('fs');
-const {routeList} = require('./functional');
 
-const {Router} = require('express');
+//Routes
+const auth = require('./routes/auth');
+const post = require('./routes/post');
+const user = require('./routes/user');
 
 if(!fs.existsSync('./config.json')) {
 	config.generate();
@@ -23,17 +25,9 @@ app.use(async (req, res, next) => {
 	next();
 });
 
-routeList.forEach(({route, methods}) => {
-	const router = new Router();
-
-	methods.forEach(({method, func}) => {
-		router[method](route, (req, res) => {
-
-		});
-	});
-
-	app.use(router);
-});
+app.use('/auth', auth);
+app.use('/post', post);
+app.use('/user', user);
 
 module.exports = {
 	path: '/api',
