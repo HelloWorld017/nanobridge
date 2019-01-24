@@ -43,6 +43,14 @@ module.exports = {
 		}
 	},
 
+	renderer: {
+		csp: {
+			polycies: {
+				'script-src': 'self'
+			}
+		}
+	},
+
 	serverMiddleware: [
 		'~/api/index.js'
 	]

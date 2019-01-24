@@ -1,4 +1,19 @@
-export default {
+module.exports = {
+	state: {
+		username: '',
+		authState: false
+	},
+
+	mutations: {
+		setUser(state, username) {
+			state.username = username;
+		},
+
+		setAuthState(state, authState) {
+			state.authState = authState;
+		}
+	},
+
 	actions: {
 		nuxtServerInit({commit}, {req}) {
 			const auth = req.cookies.Authentication;
@@ -10,8 +25,8 @@ export default {
 				return;
 			}
 
-			commit('setUser', username);
+			commit('setUser', token.username);
 			commit('setAuthState', true);
 		}
 	}
-}
+};

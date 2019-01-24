@@ -1,27 +1,82 @@
+const {db} = require('../database');
+const scrypt = require('scrypt-js');
 const {Router} = require('express');
 
 const router = new Router();
 
 router.get('/', (req, res) => {
-	res.json({
-		ok: true,
-		result: req.authState
-	});
-});
-
-router.post('/', (req, res) => {
-	const {username, password} = req.body;
-	if(typeof username !== 'string' || typeof password !== 'string') {
-		res.status(400).json({ok: false});
+	if(req.authState) {
+		res.json({
+			ok: true,
+			authenticated: true,
+			username: req.username
+		});
 		return;
 	}
 
-	req.database.
+	res.json({
+		ok: true,
+		authenticated: false
+	});
 });
 
-router.delete('/', (req, res) => {
-	res.cookie('Authentication', '', {
-		expires: new Date(0)
+router.post('/', async (req, res) => {
+	const {password} = req.body;
+	if(typeof password !== 'string') {
+		res.status(400).json({
+			ok: false,
+			reason: 'wrong-arguments'
+		});
+		return;
+	}
+
+	if(req.authState) {
+		res.json({
+			ok: true,
+			token: req.authToken
+		});
+		return;
+	}
+
+	const user = await db().collection('users').findOne({});
+
+	if(!user) {
+		res.json({
+			ok: false,
+			reason: 'wrong-id-or-password'
+		});
+		return;
+	}
+
+	const passwordNormalized = password.normalize('NFKC');
+	const [salt, targetPassword] = user.password.split('$');
+	const passwordHashed = await new Promise((resolve, reject) => {
+		scrypt(passwordNormalized, salt, 1638, 8, 1, 32, (err, progress, key) => {
+			if(err) return reject(err);
+			if(key) return resolve(key);
+		});
+	});
+
+	const correct = passwordHashed === targetPassword;
+
+	if(!correct) {
+		res.json({
+			ok: false,
+			reason: 'wrong-id-or-password'
+		});
+		return;
+	}
+
+	const token = await promisify(jwt.sign)({username: user.username}, config.secret, {
+		algorithm: 'HS256'
+	});
+
+	ctx.username = user.username;
+	ctx.authState = true;
+
+	res.json({
+		ok: true,
+		token
 	});
 });
 
