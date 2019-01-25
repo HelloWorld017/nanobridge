@@ -81,7 +81,7 @@ router.post('/', async (req, res) => {
 	});
 });
 
-router.patch('/', (req, res) => {
+router.use((req, res, next) => {
 	if(!req.authState) {
 		res.status(403).json({
 			ok: false,
@@ -90,6 +90,10 @@ router.patch('/', (req, res) => {
 		return;
 	}
 
+	next();
+});
+
+router.patch('/', (req, res) => {
 	const {username, password} = req.body;
 	if(typeof username === 'string') {
 		if(username.length > 32) {
@@ -129,14 +133,6 @@ router.patch('/', (req, res) => {
 });
 
 router.patch('/profile', upload.single('profile'), (req, res) => {
-	if(!req.authState) {
-		res.status(403).json({
-			ok: false,
-			reason: 'not-authenticated'
-		});
-		return;
-	}
-
 	if(!req.file) {
 		res.status(400).json({
 			ok: false,
@@ -159,14 +155,6 @@ router.patch('/profile', upload.single('profile'), (req, res) => {
 });
 
 router.patch('/background', upload.single('background'), (req, res) => {
-	if(!req.authState) {
-		res.status(403).json({
-			ok: false,
-			reason: 'not-authenticated'
-		});
-		return;
-	}
-
 	if(!req.file) {
 		res.status(400).json({
 			ok: false,

@@ -1,37 +1,21 @@
-const marked = require('marked');
-const {InlineLexer, Lexer, Renderer} = require('marked');
+const md = require('markdown-it');
+const mdEmoji = require('markdown-it-emoji');
+const mdIns = require('markdown-it-ins');
+const mdMark = require('markdown-it-mark');
 
-const whitelist = ['text', 'br', 'codespan', 'em', 'del', 'link', 'strong'];
-
-module.exports = () => {
-	const list = [
-		'code', 'blockquote', 'html', 'heading', 'hr', 'list', 'listitem',
-		'paragraph', 'table', 'tablerow', 'tablecell', 'strong', 'em',
-		'codespan', 'br', 'del', 'link', 'image', 'text'
-	];
-
-	const blacklist = list.filter(item => !whitelist.includes(item));
-	blacklist.forEach(key => {
-		if(Lexer.rules[key]) {
-			Lexer.rules[key].exec = () => {};
-		}
-
-		if(InlineLexer.rules[key]) {
-			InlineLexer.rules[key].exec = () => {};
-		}
-	});
-
-	const renderer = new Renderer();
-	renderer.code = (code, infostring, escaped) => {
-		return (escaped ? code : escape(code, true));
-	};
-
-	marked.setOptions({
+const markdown = md('zero')
+	.set({
 		breaks: true,
-		gfm: true,
-		sanitize: true,
-		renderer
-	});
+		linkify: true
+	})
+	.use(mdEmoji)
+	.use(mdIns)
+	.use(mdMark)
+	.enable([
+		'backticks', 'entity', 'emphasis',
+		'link', 'linkify', 'newline', 'strikethrough',
 
-	return marked;
-};
+		'code', 'blockquote', 'list' // Allow block-level elems?
+	]);
+
+module.exports = text => markdown.render(text);

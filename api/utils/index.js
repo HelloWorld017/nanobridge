@@ -1,3 +1,5 @@
+const markdown = require('./markdown');
+
 module.exports = {
 	getImageExtension(mimetype) {
 		let extension = '.png';
@@ -50,5 +52,22 @@ module.exports = {
 		});
 
 		return dec;
-	}
+	},
+
+	sanitizePostObject(post) {
+		const keys = [
+			'postId', 'content', 'images',
+			'lastImageId', 'createAt', 'replyTo'
+		];
+
+		const result = {};
+
+		keys.forEach(key => {
+			if(post[key]) result[key] = key;
+		});
+
+		return post;
+	},
+
+	markdown
 };
