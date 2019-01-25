@@ -17,7 +17,7 @@ const upload = multer({
 	}
 });
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
 	let page = 1;
 
 	if(typeof req.query.page === 'number' && isFinite(req.query.page) && req.query.page > 0) {
@@ -37,7 +37,7 @@ router.get('/', (req, res) => {
 	});
 });
 
-router.get('/:postId(\\d+)', (req, res) => {
+router.get('/:postId(\\d+)', async (req, res) => {
 	const {postId} = req.params;
 	if(typeof postId !== 'string') {
 		res.status(400).json({
@@ -65,7 +65,7 @@ router.get('/:postId(\\d+)', (req, res) => {
 	});
 });
 
-router.get('/:postId/replies', (req, res) => {
+router.get('/:postId(\\d+)/replies', async (req, res) => {
 	const {postId} = req.params;
 	if(typeof postId !== 'string') {
 		res.status(400).json({

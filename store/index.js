@@ -15,7 +15,7 @@ module.exports = {
 	},
 
 	actions: {
-		nuxtServerInit({commit}, {req}) {
+		async nuxtServerInit({commit}, {req}) {
 			const auth = req.cookies.Authentication;
 			let token = {};
 			try {

@@ -1,6 +1,5 @@
 const bodyParser = require('body-parser');
 const config = require('./config');
-const context = require('./context');
 const cookieParser = require('cookie-parser');
 const {database} = require('./database');
 const express = require('express');

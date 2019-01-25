@@ -18,7 +18,7 @@ const upload = multer({
 	}
 });
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
 	const {username, background, profile} = await db().collection('users').findOne({});
 
 	res.json({
@@ -93,7 +93,7 @@ router.use((req, res, next) => {
 	next();
 });
 
-router.patch('/', (req, res) => {
+router.patch('/', async (req, res) => {
 	const {username, password} = req.body;
 	if(typeof username === 'string') {
 		if(username.length > 32) {
@@ -132,7 +132,7 @@ router.patch('/', (req, res) => {
 	}
 });
 
-router.patch('/profile', upload.single('profile'), (req, res) => {
+router.patch('/profile', upload.single('profile'), async (req, res) => {
 	if(!req.file) {
 		res.status(400).json({
 			ok: false,
@@ -154,7 +154,7 @@ router.patch('/profile', upload.single('profile'), (req, res) => {
 	});
 });
 
-router.patch('/background', upload.single('background'), (req, res) => {
+router.patch('/background', upload.single('background'), async (req, res) => {
 	if(!req.file) {
 		res.status(400).json({
 			ok: false,

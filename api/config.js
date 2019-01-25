@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 module.exports = {
 	store: {},
 	path: './config.json',
