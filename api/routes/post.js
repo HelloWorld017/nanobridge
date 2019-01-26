@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const {db} = require('../database');
+const fs = require('fs');
 const {hexToDec, getImageExtension, markdown, sanitizePostObject} = require('../utils');
 const multer = require('multer');
 const path = require('path');
@@ -110,6 +111,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 			ok: false,
 			reason: 'wrong-arguments'
 		});
+		await req.deleteUploaded();
 		return;
 	}
 
@@ -122,7 +124,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 
 	await promisify(fs.mkdir)(postBasedir);
 
-	for(fileIndex in req.files) {
+	for(let fileIndex in req.files) {
 		const file = req.files[fileIndex];
 
 		const ext = getImageExtension(file.mimetype);
@@ -156,6 +158,11 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 	}
 
 	await db().collection('posts').insertOne(post);
+
+	res.json({
+		ok: true,
+		post: sanitizePostObject(post)
+	});
 });
 
 router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
@@ -167,6 +174,7 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 			ok: false,
 			reason: 'wrong-arguments'
 		});
+		await req.deleteUploaded();
 		return;
 	}
 
@@ -176,6 +184,7 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 			ok: false,
 			reason: 'wrong-arguments'
 		});
+		await req.deleteUploaded();
 		return;
 	}
 
@@ -202,12 +211,12 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 			return true;
 		});
 
-		for(file of deletingFiles) {
+		for(let file of deletingFiles) {
 			await promisify(fs.unlink)(path.resolve(postBasedir, file));
 		}
 	}
 
-	for(fileIndex in req.files) {
+	for(let fileIndex in req.files) {
 		const file = req.files[fileIndex];
 
 		const ext = getImageExtension(file.mimetype);
@@ -250,9 +259,10 @@ router.delete('/:postId/', async (req, res) => {
 
 	const postBasedir = path.resolve(__dirname, '..', '..', 'static', 'static_post', postId);
 
-	for({file} of originalPost.images) {
+	for(let {file} of originalPost.images) {
 		await promisify(fs.unlink)(path.resolve(postBasedir, file));
 	}
+
 	await promisify(fs.rmdir)(postBasedir);
 
 	await db().collection('posts').update(

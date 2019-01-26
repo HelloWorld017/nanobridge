@@ -2,33 +2,33 @@ const markdown = require('./markdown');
 
 module.exports = {
 	getImageExtension(mimetype) {
-		let extension = '.png';
+		let extension = 'png';
 		switch(mimetype) {
 			case 'image/jpeg':
-				extension = '.jpg';
+				extension = 'jpg';
 				break;
 
 			case 'image/png':
-				extension = '.png';
+				extension = 'png';
 				break;
 
 			case 'image/svg+xml':
-				extension = '.svg';
+				extension = 'svg';
 				break;
 
 			case 'image/gif':
-				extension = '.gif';
+				extension = 'gif';
 				break;
 
 			case 'image/webp':
-				extension = '.webp';
+				extension = 'webp';
 				break;
 		}
 
 		return extension;
 	},
 
-	hexToDec(string) {
+	hexToDec(s) {
 		function add(x, y) {
 			var c = 0, r = [];
 			var x = x.split('').map(Number);

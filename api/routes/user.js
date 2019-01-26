@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const {db} = require('../database');
+const fs = require('fs');
 const {getImageExtension} = require('../utils');
 const multer = require('multer');
 const path = require('path');
@@ -19,7 +20,16 @@ const upload = multer({
 });
 
 router.get('/', async (req, res) => {
-	const {username, background, profile} = await db().collection('users').findOne({});
+	const user = await db().collection('users').findOne({});
+	if(!user) {
+		res.json({
+			ok: false,
+			reason: 'no-user'
+		});
+		return;
+	}
+
+	const {username, background, profile} = user;
 
 	res.json({
 		ok: true,
@@ -30,7 +40,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-	const count = await db().collection('users').count();
+	const count = await db().collection('users').countDocuments();
 
 	if(count !== 0) {
 		res.status(403).json({
@@ -58,22 +68,23 @@ router.post('/', async (req, res) => {
 	}
 
 	const salt = crypto.randomBytes(32);
-	const passwordNormalized = password.normalize('NFKC');
+	const passwordNormalized = Buffer.from(password.normalize('NFKC'), 'utf8');
 
 	const passwordHashed = await new Promise((resolve, reject) => {
-		scrypt(passwordNormalized, salt, 1638, 8, 1, 32, (err, progress, key) => {
+		scrypt(passwordNormalized, salt, 1024, 8, 1, 32, (err, progress, key) => {
 			if(err) return reject(err);
-			if(key) return resolve(key);
+			if(key) return resolve(Buffer.from(key));
 		});
 	});
 
-	const passwordFinal = `${salt}$${passwordHashed}`;
+	const passwordFinal = `${salt.toString('hex')}$${passwordHashed.toString('hex')}`;
 
 	await db().collection('users').insertOne({
 		username,
 		password: passwordFinal,
 		profile: '/defaults/profile.jpg',
-		background: '/defaults/background.jpg'
+		background: '/defaults/background.jpg',
+		lastUpdate: Date.now()
 	});
 
 	res.json({
@@ -94,7 +105,7 @@ router.use((req, res, next) => {
 });
 
 router.patch('/', async (req, res) => {
-	const {username, password} = req.body;
+	const {username, password, origPassword} = req.body;
 	if(typeof username === 'string') {
 		if(username.length > 32) {
 			res.status(400).json({
@@ -112,24 +123,56 @@ router.patch('/', async (req, res) => {
 	}
 
 	if(typeof password === 'string') {
-		const salt = crypto.randomBytes(32);
-		const passwordNormalized = password.normalize('NFKC');
+		if(typeof origPassword !== 'string') {
+			res.status(400).json({
+				ok: false,
+				reason: 'wrong-arguments'
+			});
+			return;
+		}
 
-		const passwordHashed = await new Promise((resolve, reject) => {
-			scrypt(passwordNormalized, salt, 1638, 8, 1, 32, (err, progress, key) => {
+		const user = await db().collection('users').findOne({});
+
+		const origPasswordNormalized = Buffer.from(origPassword.normalize('NFKC'), 'utf8');
+		const [origSalt, targetPassword] = user.password.split('$');
+		const origPasswordHashed = await new Promise((resolve, reject) => {
+			scrypt(origPasswordNormalized, Buffer.from(origSalt, 'hex'), 1024, 8, 1, 32, (err, progress, key) => {
 				if(err) return reject(err);
-				if(key) return resolve(key);
+				if(key) return resolve(Buffer.from(key));
 			});
 		});
 
-		const passwordFinal = `${salt}$${passwordHashed}`;
+		if(origPasswordHashed.toString('hex') !== targetPassword) {
+			res.status(403).json({
+				ok: false,
+				reason: 'orig-password-not-correct'
+			});
+			return;
+		}
+
+		const salt = crypto.randomBytes(32);
+		const passwordNormalized = Buffer.from(password.normalize('NFKC'), 'utf8');
+
+		const passwordHashed = await new Promise((resolve, reject) => {
+			scrypt(passwordNormalized, salt, 1024, 8, 1, 32, (err, progress, key) => {
+				if(err) return reject(err);
+				if(key) return resolve(Buffer.from(key));
+			});
+		});
+
+		const passwordFinal = `${salt.toString('hex')}$${passwordHashed.toString('hex')}`;
 
 		await db().collection('users').findOneAndUpdate({}, {
 			$set: {
-				password: passwordFinal
+				password: passwordFinal,
+				lastUpdate: Date.now()
 			}
 		});
 	}
+
+	res.json({
+		ok: true
+	});
 });
 
 router.patch('/profile', upload.single('profile'), async (req, res) => {
@@ -152,6 +195,10 @@ router.patch('/profile', upload.single('profile'), async (req, res) => {
 			profile: `/static_user/profile.${extension}`
 		}
 	});
+
+	res.json({
+		ok: true
+	});
 });
 
 router.patch('/background', upload.single('background'), async (req, res) => {
@@ -173,6 +220,10 @@ router.patch('/background', upload.single('background'), async (req, res) => {
 		$set: {
 			profile: `/static_user/background.${extension}`
 		}
+	});
+
+	res.json({
+		ok: true
 	});
 });
 

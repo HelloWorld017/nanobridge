@@ -1,7 +1,9 @@
 module.exports = {
-	state: {
-		username: '',
-		authState: false
+	state() {
+		return {
+			username: '',
+			authState: false
+		};
 	},
 
 	mutations: {
