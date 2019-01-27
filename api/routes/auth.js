@@ -8,8 +8,8 @@ const {Router} = require('express');
 const router = new Router();
 
 router.post('/', async (req, res) => {
-	const {password} = req.body;
-	if(typeof password !== 'string') {
+	const {loginName, password} = req.body;
+	if(typeof loginName !== 'string' || typeof password !== 'string') {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -25,9 +25,11 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	const user = await db().collection('users').findOne({});
+	const user = await db().collection('users').findOne({
+		loginName
+	});
 
-	if(!user) {
+	if(!user || user.subUserOf) {
 		res.json({
 			ok: false,
 			reason: 'wrong-id-or-password'
@@ -54,8 +56,14 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
+	const subusers = await db().collection('users').find({
+		subUserOf: loginName
+	}).toArray();
+
 	const token = await promisify(jwt.sign)({
 		username: user.username,
+		loginName,
+		authedTo: subusers.map(v => v.loginName),
 		lastUpdate: user.lastUpdate
 	}, config.store.secret, {
 		algorithm: 'HS256'
@@ -72,7 +80,8 @@ router.post('/check', (req, res) => {
 		res.json({
 			ok: true,
 			authenticated: true,
-			username: req.username
+			username: req.username,
+			loginName: req.loginName
 		});
 		return;
 	}

@@ -105,7 +105,7 @@ router.use((req, res, next) => {
 });
 
 router.post('/', upload.array('images', 32), async (req, res) => {
-	const {content, replyTo} = req.body;
+	let {author, content, replyTo} = req.body;
 	if(typeof content !== 'string') {
 		res.status(400).json({
 			ok: false,
@@ -113,6 +113,10 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 		});
 		await req.deleteUploaded();
 		return;
+	}
+
+	if(typeof author !== 'string' || !req.authedTo.includes(author)) {
+		author = req.loginName;
 	}
 
 	const markedContent = markdown(content);
@@ -138,6 +142,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 	}
 
 	const post = {
+		author,
 		postId,
 		content: markedContent,
 		images,
@@ -150,7 +155,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 			postId: replyTo
 		});
 
-		if(replyingPost && !replyingPost.replyTo) {
+		if(replyingPost && !replyingPost.replyTo && replyingPost.author === author) {
 			post.replyTo = replyTo;
 		} else {
 			post.replyTo = null;
@@ -183,6 +188,15 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
+		});
+		await req.deleteUploaded();
+		return;
+	}
+
+	if(!req.authedTo.includes(originalPost.author)) {
+		res.status(403).json({
+			ok: false,
+			reason: 'no-permission'
 		});
 		await req.deleteUploaded();
 		return;
@@ -253,6 +267,14 @@ router.delete('/:postId/', async (req, res) => {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
+		});
+		return;
+	}
+
+	if(!req.authedTo.includes(originalPost.author)) {
+		res.status(403).json({
+			ok: false,
+			reason: 'no-permission'
 		});
 		return;
 	}

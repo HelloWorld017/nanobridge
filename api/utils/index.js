@@ -56,7 +56,7 @@ module.exports = {
 
 	sanitizePostObject(post) {
 		const keys = [
-			'postId', 'content', 'images',
+			'postId', 'content', 'images', 'author',
 			'lastImageId', 'createAt', 'replyTo'
 		];
 

@@ -46,6 +46,8 @@ app.use(async (req, res, next) => {
 	}
 
 	req.username = token.username;
+	req.loginName = token.loginName;
+	req.authedTo = token.authedTo;
 	req.authState = true;
 	req.authToken = authToken;
 

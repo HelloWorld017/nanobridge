@@ -1,3 +1,4 @@
+const config = require('../config');
 const crypto = require('crypto');
 const {db} = require('../database');
 const fs = require('fs');
@@ -19,8 +20,12 @@ const upload = multer({
 	}
 });
 
-router.get('/', async (req, res) => {
-	const user = await db().collection('users').findOne({});
+router.get('/:userLoginName', async (req, res) => {
+	const {userLoginName} = req.params;
+	const user = await db().collection('users').findOne({
+		loginName: userLoginName
+	});
+
 	if(!user) {
 		res.json({
 			ok: false,
@@ -29,29 +34,28 @@ router.get('/', async (req, res) => {
 		return;
 	}
 
-	const {username, background, profile} = user;
+	const {username, background, profile, loginName} = user;
 
 	res.json({
 		ok: true,
 		user: {
-			username, background, profile
+			username, background, profile, loginName
 		}
 	});
 });
 
 router.post('/', async (req, res) => {
-	const count = await db().collection('users').countDocuments();
+	const {loginName, username, password, key} = req.body;
 
-	if(count !== 0) {
+	if(key !== config.store.userCreateToken) {
 		res.status(403).json({
 			ok: false,
-			reason: 'already-user-exists'
+			reason: 'wrong-createtoken'
 		});
 		return;
 	}
 
-	const {username, password} = req.body;
-	if(typeof username !== 'string' || typeof password !== 'string') {
+	if(typeof loginName !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -59,10 +63,19 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(username.length > 32) {
+	if(!/[a-zA-Z0-9-_.]{5,32}/.test(loginName) || username.length > 32) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
+		});
+		return;
+	}
+
+	const existing = await db().collection('users').findOne({loginName});
+	if(existing) {
+		res.status(403).json({
+			ok: false,
+			reason: 'user-already-exists'
 		});
 		return;
 	}
@@ -80,6 +93,7 @@ router.post('/', async (req, res) => {
 	const passwordFinal = `${salt.toString('hex')}$${passwordHashed.toString('hex')}`;
 
 	await db().collection('users').insertOne({
+		loginName,
 		username,
 		password: passwordFinal,
 		profile: '/defaults/profile.jpg',
@@ -92,8 +106,19 @@ router.post('/', async (req, res) => {
 	});
 });
 
-router.use((req, res, next) => {
-	if(!req.authState) {
+router.param('loginName', async (req, res, next) => {
+	const {loginName} = req.body;
+	const existing = await db().collection('users').findOne({loginName});
+
+	if(!existing) {
+		res.status(403).json({
+			ok: false,
+			reason: 'not-existing'
+		});
+		return;
+	}
+
+	if(!req.authState || !req.authedTo.includes(loginName)) {
 		res.status(403).json({
 			ok: false,
 			reason: 'not-authenticated'
@@ -101,11 +126,85 @@ router.use((req, res, next) => {
 		return;
 	}
 
+	if(existing.subUserOf) {
+		req.isSubUser = true;
+		req.subUserOwner = existing.subUserOf;
+	}
+
+	req.authedUser = existing;
+
 	next();
 });
 
-router.patch('/', async (req, res) => {
+router.get('/:loginName/subuser', async (req, res) => {
+	const subusers = await db().collection('users').find({
+		subUserOf: req.loginName
+	}).toArray();
+
+	res.json({
+		ok: true,
+		users: subusers.map(v => v.loginName)
+	});
+});
+
+router.post('/:loginName/subuser', async (req, res) => {
+	const loginName = req.loginName;
+	const {username, loginName: desiredLoginName} = req.body;
+
+	if(typeof username !== 'string' || username.length > 32) {
+		res.status(400).json({
+			ok: false,
+			reason: 'wrong-arguments'
+		});
+		return;
+	}
+
+	if(typeof desiredLoginName !== 'string' || !/[a-zA-Z0-9-_.]{5,32}/.test(loginName)) {
+		res.status(400).json({
+			ok: false,
+			reason: 'wrong-arguments'
+		});
+		return;
+	}
+
+	const createdSubUsers = await db().collection('users').countDocuments({
+		subUserOf: loginName
+	});
+
+	if(config.store.maxSubUsers !== -1 && createdSubUsers > config.store.maxSubUsers) {
+		res.status(403).json({
+			ok: false,
+			reason: 'too-many-subusers'
+		});
+		return;
+	}
+
+	const existing = await db().collection('users').find({
+		loginName: desiredLoginName
+	});
+
+	if(existing) {
+		res.status(403).json({
+			ok: false,
+			reason: 'user-already-exists'
+		});
+		return;
+	}
+
+	await db().collection('users').insertOne({
+		loginName: desiredLoginName,
+		username,
+		profile: '/defaults/profile.jpg',
+		background: '/defaults/background.jpg',
+		subUserOf: loginName
+	});
+
+});
+
+router.patch('/:loginName', async (req, res) => {
+	const loginName = req.authedUser.loginName;
 	const {username, password, origPassword} = req.body;
+
 	if(typeof username === 'string') {
 		if(username.length > 32) {
 			res.status(400).json({
@@ -115,7 +214,9 @@ router.patch('/', async (req, res) => {
 			return;
 		}
 
-		await db().collection('users').findOneAndUpdate({}, {
+		await db().collection('users').findOneAndUpdate({
+			loginName
+		}, {
 			$set: {
 				username
 			}
@@ -131,7 +232,7 @@ router.patch('/', async (req, res) => {
 			return;
 		}
 
-		const user = await db().collection('users').findOne({});
+		const user = req.authedUser;
 
 		const origPasswordNormalized = Buffer.from(origPassword.normalize('NFKC'), 'utf8');
 		const [origSalt, targetPassword] = user.password.split('$');
@@ -162,7 +263,9 @@ router.patch('/', async (req, res) => {
 
 		const passwordFinal = `${salt.toString('hex')}$${passwordHashed.toString('hex')}`;
 
-		await db().collection('users').findOneAndUpdate({}, {
+		await db().collection('users').findOneAndUpdate({
+			loginName
+		}, {
 			$set: {
 				password: passwordFinal,
 				lastUpdate: Date.now()
@@ -175,7 +278,7 @@ router.patch('/', async (req, res) => {
 	});
 });
 
-router.patch('/profile', upload.single('profile'), async (req, res) => {
+router.patch('/:loginName/profile', upload.single('profile'), async (req, res) => {
 	if(!req.file) {
 		res.status(400).json({
 			ok: false,
@@ -185,14 +288,17 @@ router.patch('/profile', upload.single('profile'), async (req, res) => {
 	}
 
 	const extension = getImageExtension(req.file.mimetype);
+	const filename = `${req.authedUser.loginName} profile.${extension}`;
 
 	await promisify(fs.rename)(req.file.path, path.resolve(
-		__dirname, '..', '..', `./static/static_user/`, `profile.${extension}`
+		__dirname, '..', '..', `./static/static_user/`, filename
 	));
 
-	await db().collection('users').findOneAndUpdate({}, {
+	await db().collection('users').findOneAndUpdate({
+		loginName: req.authedUser.loginName
+	}, {
 		$set: {
-			profile: `/static_user/profile.${extension}`
+			profile: `/static_user/${filename}`
 		}
 	});
 
@@ -201,7 +307,7 @@ router.patch('/profile', upload.single('profile'), async (req, res) => {
 	});
 });
 
-router.patch('/background', upload.single('background'), async (req, res) => {
+router.patch('/:loginName/background', upload.single('background'), async (req, res) => {
 	if(!req.file) {
 		res.status(400).json({
 			ok: false,
@@ -211,14 +317,17 @@ router.patch('/background', upload.single('background'), async (req, res) => {
 	}
 
 	const extension = getImageExtension(req.file.mimetype);
+	const filename = `${req.authedUser.loginName} background.${extension}`;
 
 	await promisify(fs.rename)(req.file.path, path.resolve(
-		__dirname, '..', '..', `./static/static_user/`, `background.${extension}`
+		__dirname, '..', '..', `./static/static_user/`, filename
 	));
 
-	await db().collection('users').findOneAndUpdate({}, {
+	await db().collection('users').findOneAndUpdate({
+		loginName: req.authedUser.loginName
+	}, {
 		$set: {
-			profile: `/static_user/background.${extension}`
+			profile: `/static_user/${filename}`
 		}
 	});
 
