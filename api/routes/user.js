@@ -107,7 +107,7 @@ router.post('/', async (req, res) => {
 });
 
 router.param('loginName', async (req, res, next) => {
-	const {loginName} = req.body;
+	const {loginName} = req.params;
 	const existing = await db().collection('users').findOne({loginName});
 
 	if(!existing) {
@@ -149,7 +149,7 @@ router.get('/:loginName/subuser', async (req, res) => {
 
 router.post('/:loginName/subuser', async (req, res) => {
 	const loginName = req.loginName;
-	const {username, loginName: desiredLoginName} = req.body;
+	let {username, loginName: desiredLoginName} = req.body;
 
 	if(typeof username !== 'string' || username.length > 32) {
 		res.status(400).json({
@@ -159,7 +159,7 @@ router.post('/:loginName/subuser', async (req, res) => {
 		return;
 	}
 
-	if(typeof desiredLoginName !== 'string' || !/[a-zA-Z0-9-_.]{5,32}/.test(loginName)) {
+	if(typeof desiredLoginName !== 'string' || !/[a-zA-Z0-9-_.]{5,32}/.test(desiredLoginName)) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -179,7 +179,7 @@ router.post('/:loginName/subuser', async (req, res) => {
 		return;
 	}
 
-	const existing = await db().collection('users').find({
+	const existing = await db().collection('users').findOne({
 		loginName: desiredLoginName
 	});
 
@@ -199,6 +199,9 @@ router.post('/:loginName/subuser', async (req, res) => {
 		subUserOf: loginName
 	});
 
+	res.json({
+		ok: true
+	});
 });
 
 router.patch('/:loginName', async (req, res) => {
@@ -284,7 +287,13 @@ router.patch('/:loginName/profile', upload.single('profile'), async (req, res) =
 			ok: false,
 			reason: 'file-not-uploaded'
 		});
+		await req.deleteUploaded();
 		return;
+	}
+
+	const originalProfile = req.authedUser.profile;
+	if(originalProfile !== '/defaults/profile.jpg') {
+		await promisify(fs.unlink)(originalProfile);
 	}
 
 	const extension = getImageExtension(req.file.mimetype);
@@ -313,7 +322,13 @@ router.patch('/:loginName/background', upload.single('background'), async (req, 
 			ok: false,
 			reason: 'file-not-uploaded'
 		});
+		await req.deleteUploaded();
 		return;
+	}
+
+	const originalBackground = req.authedUser.background;
+	if(originalBackground !== '/defaults/background.jpg') {
+		await promisify(fs.unlink)(originalBackground);
 	}
 
 	const extension = getImageExtension(req.file.mimetype);

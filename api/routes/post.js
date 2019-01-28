@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const {db} = require('../database');
 const fs = require('fs');
-const {hexToDec, getImageExtension, markdown, sanitizePostObject} = require('../utils');
+const {exists, hexToDec, getImageExtension, markdown, sanitizePostObject} = require('../utils');
 const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
@@ -126,11 +126,11 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 	const postId = hexToDec(crypto.createHash('md5').update(postIdGen).digest('hex'));
 	const postBasedir = path.resolve(__dirname, '..', '..', 'static', 'static_post', postId);
 
-	await promisify(fs.mkdir)(postBasedir);
+	if(req.files.length !== 0) {
+		await promisify(fs.mkdir)(postBasedir);
+	}
 
-	for(let fileIndex in req.files) {
-		const file = req.files[fileIndex];
-
+	for(let [fileIndex, file] of req.files.entries()) {
 		const ext = getImageExtension(file.mimetype);
 		const imageFile = `${fileIndex + 1}.${ext}`;
 		await promisify(fs.rename)(file.path, path.resolve(postBasedir, imageFile));
@@ -171,17 +171,9 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 });
 
 router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
-	const {postId, content, deleteImages} = req.body;
+	const {postId} = req.params;
+	const {content, deleteImages} = req.body;
 	const setObject = {};
-
-	if(typeof postId !== 'string') {
-		res.status(400).json({
-			ok: false,
-			reason: 'wrong-arguments'
-		});
-		await req.deleteUploaded();
-		return;
-	}
 
 	const originalPost = await db().collection('posts').findOne({postId});
 	if(!originalPost) {
@@ -203,6 +195,7 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 	}
 
 	const postBasedir = path.resolve(__dirname, '..', '..', 'static', 'static_post', postId);
+	const postBasedirExists = await exists(postBasedir);
 
 	if(typeof content === 'string') {
 		const markedContent = markdown(content);
@@ -230,9 +223,11 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 		}
 	}
 
-	for(let fileIndex in req.files) {
-		const file = req.files[fileIndex];
+	if(req.files.length > 0 && !postBasedirExists) {
+		await promisify(fs.mkdir)(postBasedir);
+	}
 
+	for(let [fileIndex, file] of req.files.entries()) {
 		const ext = getImageExtension(file.mimetype);
 		const imageFile = `${fileIndex + 1}.${ext}`;
 		await promisify(fs.rename)(file.path, path.resolve(postBasedir, imageFile));
@@ -281,11 +276,13 @@ router.delete('/:postId/', async (req, res) => {
 
 	const postBasedir = path.resolve(__dirname, '..', '..', 'static', 'static_post', postId);
 
-	for(let {file} of originalPost.images) {
-		await promisify(fs.unlink)(path.resolve(postBasedir, file));
-	}
+	if(await exists(postBasedir)) {
+		for(let {file} of originalPost.images) {
+			await promisify(fs.unlink)(path.resolve(postBasedir, file));
+		}
 
-	await promisify(fs.rmdir)(postBasedir);
+		await promisify(fs.rmdir)(postBasedir);
+	}
 
 	await db().collection('posts').update(
 		{replyTo: postId},

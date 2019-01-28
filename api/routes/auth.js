@@ -7,6 +7,23 @@ const {Router} = require('express');
 
 const router = new Router();
 
+router.get('/', (req, res) => {
+	if(req.authState) {
+		res.json({
+			ok: true,
+			authenticated: true,
+			username: req.username,
+			loginName: req.loginName
+		});
+		return;
+	}
+
+	res.json({
+		ok: true,
+		authenticated: false
+	});
+});
+
 router.post('/', async (req, res) => {
 	const {loginName, password} = req.body;
 	if(typeof loginName !== 'string' || typeof password !== 'string') {
@@ -56,14 +73,9 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	const subusers = await db().collection('users').find({
-		subUserOf: loginName
-	}).toArray();
-
 	const token = await promisify(jwt.sign)({
 		username: user.username,
 		loginName,
-		authedTo: subusers.map(v => v.loginName),
 		lastUpdate: user.lastUpdate
 	}, config.store.secret, {
 		algorithm: 'HS256'
@@ -72,23 +84,6 @@ router.post('/', async (req, res) => {
 	res.json({
 		ok: true,
 		token
-	});
-});
-
-router.post('/check', (req, res) => {
-	if(req.authState) {
-		res.json({
-			ok: true,
-			authenticated: true,
-			username: req.username,
-			loginName: req.loginName
-		});
-		return;
-	}
-
-	res.json({
-		ok: true,
-		authenticated: false
 	});
 });
 

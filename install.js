@@ -1,17 +1,11 @@
 const config = require('./api/config');
 const {database} = require('./api/database');
+const {exists} = require('./api/utils');
 const fs = require('fs');
 const {promisify} = require('util');
 
 const checkAndGenerate = async dir => {
-	let exists = false;
-
-	try {
-		await promisify(fs.access)(dir);
-		exists = true;
-	} catch(e) {}
-
-	if(!exists) {
+	if(!await exists(dir)) {
 		await promisify(fs.mkdir)(dir);
 	}
 };

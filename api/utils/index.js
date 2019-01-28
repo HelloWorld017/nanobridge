@@ -1,4 +1,6 @@
+const fs = require('fs');
 const markdown = require('./markdown');
+const {promisify} = require('util');
 
 module.exports = {
 	getImageExtension(mimetype) {
@@ -67,6 +69,17 @@ module.exports = {
 		});
 
 		return post;
+	},
+
+	async exists(dir) {
+		let exists = false;
+
+		try {
+			await promisify(fs.access)(dir);
+			exists = true;
+		} catch(e) {}
+
+		return exists;
 	},
 
 	markdown

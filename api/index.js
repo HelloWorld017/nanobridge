@@ -32,6 +32,8 @@ app.use(async (req, res, next) => {
 	const db = database.db;
 
 	let token = {};
+	let authedTo = [];
+
 	try {
 		const user = await db.collection('users').findOne({});
 		token = await promisify(jwt.verify)(authToken, config.store.secret);
@@ -39,6 +41,12 @@ app.use(async (req, res, next) => {
 		if(token.lastUpdate !== user.lastUpdate) {
 			throw new Error("Token Invalidated");
 		}
+
+		const subusers = await db.collection('users').find({
+			subUserOf: token.loginName
+		}).toArray();
+
+		authedTo = subusers.map(v => v.loginName).concat(token.loginName);
 	} catch(err) {
 		req.authState = false;
 		next();
@@ -47,7 +55,7 @@ app.use(async (req, res, next) => {
 
 	req.username = token.username;
 	req.loginName = token.loginName;
-	req.authedTo = token.authedTo;
+	req.authedTo = authedTo;
 	req.authState = true;
 	req.authToken = authToken;
 
@@ -86,9 +94,27 @@ app.use((req, res, next) => {
 	next();
 });
 
+app.get('/', (req, res) => {
+	res.status(418).json({
+		'nanobridge': 'A microblog application',
+		'server': 'NanoBridge API Server',
+		'ok': true
+	});
+});
+
 app.use('/auth', auth);
 app.use('/post', post);
 app.use('/user', user);
+
+app.use((err, req, res, next) => {
+	res.status(500);
+	res.json({
+		ok: false,
+		reason: 'internal-server'
+	});
+
+	console.error(err);
+});
 
 module.exports = {
 	path: '/api',
