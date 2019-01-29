@@ -170,7 +170,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 	});
 });
 
-router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
+router.patch('/:postId(\\d+)/', upload.array('addImages', 32), async (req, res) => {
 	const {postId} = req.params;
 	const {content, deleteImages} = req.body;
 	const setObject = {};
@@ -244,18 +244,14 @@ router.patch('/:postId/', upload.array('addImages', 32), async (req, res) => {
 	await db().collection('posts').findOneAndUpdate({postId}, {
 		$set: setObject
 	});
+
+	res.json({
+		ok: true
+	});
 });
 
-router.delete('/:postId/', async (req, res) => {
-	const {postId} = req.body;
-
-	if(typeof postId !== 'string') {
-		res.status(400).json({
-			ok: false,
-			reason: 'wrong-arguments'
-		});
-		return;
-	}
+router.delete('/:postId(\\d+)/', async (req, res) => {
+	const {postId} = req.params;
 
 	const originalPost = await db().collection('posts').findOne({postId});
 	if(!originalPost) {
@@ -284,11 +280,15 @@ router.delete('/:postId/', async (req, res) => {
 		await promisify(fs.rmdir)(postBasedir);
 	}
 
-	await db().collection('posts').update(
+	await db().collection('posts').updateMany(
 		{replyTo: postId},
 		{$set: {replyTo: null}}
 	);
-	await db().collection('posts').remove({postId}, {justOne: true});
+	await db().collection('posts').deleteOne({postId});
+
+	res.json({
+		ok: true
+	});
 });
 
 module.exports = router;

@@ -59,16 +59,16 @@ module.exports = {
 	sanitizePostObject(post) {
 		const keys = [
 			'postId', 'content', 'images', 'author',
-			'lastImageId', 'createAt', 'replyTo'
+			'createdAt', 'replyTo'
 		];
 
 		const result = {};
 
 		keys.forEach(key => {
-			if(post[key]) result[key] = key;
+			if(post[key] !== undefined) result[key] = post[key];
 		});
 
-		return post;
+		return result;
 	},
 
 	async exists(dir) {
