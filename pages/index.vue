@@ -1,17 +1,25 @@
 <template>
 	<main class="Container">
-		<user-header></user-header>
+		<header>
+			Nano Bridge
+		</header>
 		<div class="Documents">
 		</div>
 	</main>
 </template>
 
-<script>
-	import UserHeader from "~/components/UserHeader.vue";
+<style lang="less" scoped>
+	header {
+		width: 100%;
+		height: 300px;
+		background: #000;
 
-	export default {
-		components: {
-			UserHeader
-		}
-	};
-</script>
+		display: flex;
+		justify-content: center;
+		align-items: center;
+
+		color: #fff;
+		font-family: 'Noto Sans CJK KR', sans-serif;
+		font-size: 3rem;
+	}
+</style>

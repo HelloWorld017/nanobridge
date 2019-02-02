@@ -33,6 +33,7 @@ app.use(async (req, res, next) => {
 
 	let token = {};
 	let authedTo = [];
+	let acl = config.store.acl.default;
 
 	try {
 		const user = await db.collection('users').findOne({});
@@ -47,6 +48,7 @@ app.use(async (req, res, next) => {
 		}).toArray();
 
 		authedTo = subusers.map(v => v.loginName).concat(token.loginName);
+		acl = user.acl;
 	} catch(err) {
 		req.authState = false;
 		next();
@@ -55,9 +57,14 @@ app.use(async (req, res, next) => {
 
 	req.username = token.username;
 	req.loginName = token.loginName;
-	req.authedTo = authedTo;
+	req.authedTo = name => {
+		if(acl.includes('authAnyone')) return true;
+
+		return authedTo.includes(name);
+	};
 	req.authState = true;
 	req.authToken = authToken;
+	req.acl = acl;
 
 	next();
 });

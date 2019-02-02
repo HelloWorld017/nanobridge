@@ -2,6 +2,7 @@ const config = require('../config');
 const {db} = require('../database');
 const jwt = require('jsonwebtoken');
 const {promisify} = require('util');
+const {requireACL} = require('../utils');
 const scrypt = require('scrypt-js');
 const {Router} = require('express');
 
@@ -13,18 +14,20 @@ router.get('/', (req, res) => {
 			ok: true,
 			authenticated: true,
 			username: req.username,
-			loginName: req.loginName
+			loginName: req.loginName,
+			acl: req.acl
 		});
 		return;
 	}
 
 	res.json({
 		ok: true,
-		authenticated: false
+		authenticated: false,
+		acl: req.acl
 	});
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireACL('authGenerate'), async (req, res) => {
 	const {loginName, password} = req.body;
 	if(typeof loginName !== 'string' || typeof password !== 'string') {
 		res.status(400).json({

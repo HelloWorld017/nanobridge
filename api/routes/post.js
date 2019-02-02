@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const {db} = require('../database');
 const fs = require('fs');
-const {exists, hexToDec, getImageExtension, markdown, sanitizePostObject} = require('../utils');
+const {exists, hexToDec, getImageExtension, markdown, requireACL, sanitizePostObject} = require('../utils');
 const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
@@ -18,7 +18,7 @@ const upload = multer({
 	}
 });
 
-router.get('/', async (req, res) => {
+router.get('/', requireACL('postRead'), async (req, res) => {
 	let page = 1;
 
 	if(typeof req.query.page === 'number' && isFinite(req.query.page) && req.query.page > 0) {
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 	});
 });
 
-router.get('/:postId(\\d+)', async (req, res) => {
+router.get('/:postId(\\d+)', requireACL('postRead'), async (req, res) => {
 	const {postId} = req.params;
 	if(typeof postId !== 'string') {
 		res.status(400).json({
@@ -66,7 +66,7 @@ router.get('/:postId(\\d+)', async (req, res) => {
 	});
 });
 
-router.get('/:postId(\\d+)/replies', async (req, res) => {
+router.get('/:postId(\\d+)/replies', requireACL('postRead'), async (req, res) => {
 	const {postId} = req.params;
 	if(typeof postId !== 'string') {
 		res.status(400).json({
@@ -104,7 +104,7 @@ router.use((req, res, next) => {
 	next();
 });
 
-router.post('/', upload.array('images', 32), async (req, res) => {
+router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req, res) => {
 	let {author, content, replyTo} = req.body;
 	if(typeof content !== 'string') {
 		res.status(400).json({
@@ -115,7 +115,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 		return;
 	}
 
-	if(typeof author !== 'string' || !req.authedTo.includes(author)) {
+	if(typeof author !== 'string' || !req.authedTo(author)) {
 		author = req.loginName;
 	}
 
@@ -170,7 +170,7 @@ router.post('/', upload.array('images', 32), async (req, res) => {
 	});
 });
 
-router.patch('/:postId(\\d+)/', upload.array('addImages', 32), async (req, res) => {
+router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImages', 32), async (req, res) => {
 	const {postId} = req.params;
 	const {content, deleteImages} = req.body;
 	const setObject = {};
@@ -185,7 +185,7 @@ router.patch('/:postId(\\d+)/', upload.array('addImages', 32), async (req, res) 
 		return;
 	}
 
-	if(!req.authedTo.includes(originalPost.author)) {
+	if(!req.authedTo(originalPost.author)) {
 		res.status(403).json({
 			ok: false,
 			reason: 'no-permission'
@@ -250,7 +250,7 @@ router.patch('/:postId(\\d+)/', upload.array('addImages', 32), async (req, res) 
 	});
 });
 
-router.delete('/:postId(\\d+)/', async (req, res) => {
+router.delete('/:postId(\\d+)/', requireACL('postDelete'), async (req, res) => {
 	const {postId} = req.params;
 
 	const originalPost = await db().collection('posts').findOne({postId});
@@ -262,7 +262,7 @@ router.delete('/:postId(\\d+)/', async (req, res) => {
 		return;
 	}
 
-	if(!req.authedTo.includes(originalPost.author)) {
+	if(!req.authedTo(originalPost.author)) {
 		res.status(403).json({
 			ok: false,
 			reason: 'no-permission'

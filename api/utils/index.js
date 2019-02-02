@@ -82,5 +82,18 @@ module.exports = {
 		return exists;
 	},
 
-	markdown
+	markdown,
+
+	requireACL: (...aclNames) => (req, res, next) => {
+		const satisfyRules = aclNames.every((name) => req.acl.includes(name));
+		if(!satisfyRules) {
+			res.status(403).json({
+				ok: false,
+				reason: 'no-permission'
+			});
+			return;
+		}
+
+		next();
+	}
 };

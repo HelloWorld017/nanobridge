@@ -11,11 +11,11 @@ class Database extends EventEmitter {
 
 	async init() {
 		this.client = await MongoClient.connect(
-			`mongodb://${config.store.dburl}:${config.store.dbport}`,
+			`mongodb://${config.store.db.url}:${config.store.db.port}`,
 			{useNewUrlParser: true}
 		);
 
-		this.db = this.client.db(config.store.dbname);
+		this.db = this.client.db(config.store.db.name);
 
 		this.initialized = true;
 		this.emit('init');
