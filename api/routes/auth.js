@@ -27,7 +27,7 @@ router.get('/', (req, res) => {
 	});
 });
 
-router.post('/', requireACL('authGenerate'), async (req, res) => {
+router.post('/', async (req, res) => {
 	const {loginName, password} = req.body;
 	if(typeof loginName !== 'string' || typeof password !== 'string') {
 		res.status(400).json({
@@ -50,9 +50,17 @@ router.post('/', requireACL('authGenerate'), async (req, res) => {
 	});
 
 	if(!user || user.subUserOf) {
-		res.json({
+		res.status(403).json({
 			ok: false,
 			reason: 'wrong-id-or-password'
+		});
+		return;
+	}
+
+	if(!user.acl.includes('authGenerate')) {
+		res.status(403).json({
+			ok: false,
+			reason: 'no-permission'
 		});
 		return;
 	}

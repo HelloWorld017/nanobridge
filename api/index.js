@@ -33,11 +33,14 @@ app.use(async (req, res, next) => {
 
 	let token = {};
 	let authedTo = [];
-	let acl = config.store.acl.default;
+	let acl = config.store.acl.guest;
 
 	try {
-		const user = await db.collection('users').findOne({});
 		token = await promisify(jwt.verify)(authToken, config.store.secret);
+
+		const user = await db.collection('users').findOne({
+			loginName: token.loginName
+		});
 
 		if(token.lastUpdate !== user.lastUpdate) {
 			throw new Error("Token Invalidated");
@@ -51,6 +54,7 @@ app.use(async (req, res, next) => {
 		acl = user.acl;
 	} catch(err) {
 		req.authState = false;
+		req.acl = config.store.acl.guest.slice();
 		next();
 		return;
 	}

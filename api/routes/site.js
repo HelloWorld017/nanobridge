@@ -4,11 +4,11 @@ const {Router} = require('express');
 const router = new Router();
 
 router.get('/', (req, res) => {
-	const {siteName, siteDescription} = config.store;
+	const {name, description} = config.store.site;
 
 	res.json({
-		siteName,
-		siteDescription
+		name,
+		description
 	});
 });
 
@@ -28,10 +28,12 @@ router.patch('/', requireACL('siteEdit'), (req, res) => {
 	const {name, description} = req.body;
 
 	if(typeof name === 'string') {
-		config.store.name = name;
+		config.store.site.name = name;
 	}
 
 	if(typeof description === 'string') {
-		config.store.description = description;
+		config.store.site.description = description;
 	}
+
+	config.save();
 });

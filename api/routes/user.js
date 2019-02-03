@@ -402,7 +402,25 @@ router.patch('/:loginName/acl', requireACL('userACL'), async (req, res) => {
 	const {acl} = req.body;
 	const aclList = acl.split(',');
 
-	await db().
+	if(req.authedUser.acl.includes('admin')) {
+		res.status(403).json({
+			ok: false,
+			reason: 'no-permission'
+		});
+		return;
+	}
+
+	await db().collection('users').findOneAndUpdate({
+		loginName: req.params.loginName
+	}, {
+		$set: {
+			acl: aclList
+		}
+	});
+
+	res.json({
+		ok: true
+	});
 });
 
 module.exports = router;
