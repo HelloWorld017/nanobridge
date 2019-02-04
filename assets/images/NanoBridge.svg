@@ -1,0 +1,36 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<path d="
+		M63.4 91 L20 166 H106.8 L150.2 91 H237 L193.6 166 H106.8
+		M20 166 L63.4 91 H237
+		M193.6 166 H106.8 L63.4 91
+		M63.4 91 H150.2 L193.6 166"
+
+		class="NanoBridge__colored"
+		stroke="url(#NanoBridge__gradient0)"
+		stroke-width="20"
+		style="stroke-linejoin: bevel">
+	</path>
+
+	<path d="
+		M63.4 91 L20 166 H106.8 L150.2 91 H237 L193.6 166 H106.8
+		M20 166 L63.4 91 H237
+		M193.6 166 H106.8 L63.4 91
+		M63.4 91 H150.2 L193.6 166"
+
+		class="NanoBridge__default"
+		stroke="#d0d0d0"
+		stroke-width="20"
+		style="stroke-linejoin: bevel">
+	</path>
+
+	<defs>
+		<linearGradient id="NanoBridge__gradient0"
+			x1="269.112" y1="128.987"
+			x2="-12.1121" y2="128.987"
+			gradientUnits="userSpaceOnUse">
+
+			<stop stop-color="#F403CD"/>
+			<stop offset="1" stop-color="#00BCD4"/>
+		</linearGradient>
+	</defs>
+</svg>

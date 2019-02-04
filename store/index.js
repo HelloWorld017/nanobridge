@@ -1,18 +1,10 @@
-module.exports = {
-	state() {
-		return {
-			username: '',
-			authState: false
-		};
-	},
+import cookie from 'cookie';
 
-	mutations: {
-		setUser(state, username) {
-			state.username = username;
-		},
-
-		setAuthState(state, authState) {
-			state.authState = authState;
+export default {
+	actions: {
+		async nuxtServerInit({dispatch}, ctx) {
+			await dispatch('auth/nuxtServerInit', ctx);
+			await dispatch('site/nuxtServerInit', ctx);
 		}
 	}
 };

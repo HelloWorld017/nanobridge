@@ -400,7 +400,7 @@ router.patch('/:loginName/background', requireACL('userUpdate'), upload.single('
 
 router.patch('/:loginName/acl', requireACL('userACL'), async (req, res) => {
 	const {acl} = req.body;
-	const aclList = acl.split(',');
+	const aclList = acl.split(',').filter(v => v !== 'admin');
 
 	if(req.authedUser.acl.includes('admin')) {
 		res.status(403).json({

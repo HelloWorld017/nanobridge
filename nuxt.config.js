@@ -53,5 +53,10 @@ module.exports = {
 
 	serverMiddleware: [
 		'~/api/index.js'
+	],
+
+	modules: [
+		'@nuxtjs/axios',
+		'nuxt-svg'
 	]
 };

@@ -1,4 +1,5 @@
 const config = require('../config');
+const {requireACL} = require('../utils');
 const {Router} = require('express');
 
 const router = new Router();
@@ -7,24 +8,14 @@ router.get('/', (req, res) => {
 	const {name, description} = config.store.site;
 
 	res.json({
+		ok: true,
 		name,
-		description
+		description,
+		registerEnabled: !config.store.user.createToken
 	});
 });
 
 router.patch('/', requireACL('siteEdit'), (req, res) => {
-	const {loginName} = req.loginName;
-	const user = await db().collection('users').findOne({loginName});
-
-	if(!req.authState || !user) {
-		res.status(403).json({
-			ok: false,
-			reason: 'no-permission'
-		});
-
-		return;
-	}
-
 	const {name, description} = req.body;
 
 	if(typeof name === 'string') {
@@ -36,4 +27,10 @@ router.patch('/', requireACL('siteEdit'), (req, res) => {
 	}
 
 	config.save();
+
+	res.json({
+		ok: true
+	});
 });
+
+module.exports = router;

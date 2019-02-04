@@ -10,6 +10,7 @@ const {promisify} = require('util');
 //Routes
 const auth = require('./routes/auth');
 const post = require('./routes/post');
+const site = require('./routes/site');
 const user = require('./routes/user');
 
 config.init();
@@ -115,6 +116,7 @@ app.get('/', (req, res) => {
 
 app.use('/auth', auth);
 app.use('/post', post);
+app.use('/site', site);
 app.use('/user', user);
 
 app.use((err, req, res, next) => {
