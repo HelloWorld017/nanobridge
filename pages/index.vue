@@ -15,7 +15,7 @@
 		</header>
 
 		<div class="Documents">
-			<post-listing context="/"></post-listing>
+			<post-listing :posts="posts" :users="users"></post-listing>
 		</div>
 	</main>
 </template>
@@ -47,6 +47,7 @@
 
 			background-image: url('../assets/images/Background.jpg');
 			background-size: cover;
+			background-position: center;
 			opacity: .3;
 		}
 	}
@@ -128,6 +129,12 @@
 					}
 				]
 			};
+		},
+
+		async asyncData({$axios}) {
+			const {posts, users} = (await $axios('/api/post/')).data;
+
+			return {posts: posts || [], users: users || {}};
 		},
 
 		components: {

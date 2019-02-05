@@ -1,29 +1,35 @@
 <template>
 	<div class="PostListing">
-		<div class="PostListing__chooser Chooser">
-			<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
-				글
-			</button>
+		<div class="PostListing__narrow">
+			<div class="PostListing__chooser Chooser">
+				<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
+					글
+				</button>
 
-			<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
-				앨범
-			</button>
+				<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
+					앨범
+				</button>
 
-			<div class="Chooser__highlight"></div>
+				<div class="Chooser__highlight"></div>
+			</div>
 		</div>
 
 		<div class="PostListing__list">
+			<template v-for="(post, index) in posts">
+				<div class="PostListing__narrow">
+					<post :key="`${post.postId}-post`" :post="post" :user="users[post.author]"></post>
+				</div>
 
+				<!--
+					<div :key="`${post.postId}-divider}`" class="PostDivider" v-if="index !== posts.length - 1"></div>
+				-->
+			</template>
 		</div>
 	</div>
 </template>
 
 <style lang="less" scoped>
 	.PostListing {
-		max-width: 768px;
-		width: 95vw;
-
-		margin: 0 auto;
 		padding: 50px 0;
 
 		&__chooser {
@@ -32,6 +38,13 @@
 			border-radius: 16px;
 
 			background: #202020;
+		}
+
+		&__narrow {
+			max-width: 768px;
+			width: 95vw;
+
+			margin: 0 auto;
 		}
 	}
 
@@ -85,20 +98,52 @@
 			left: 50%;
 		}
 	}
+
+	.PostDivider {
+
+	}
 </style>
 
 <script>
+	import Post from "./Post.vue";
+
 	export default {
 		data() {
 			return {
-				chosen: 1
+				chosen: 1,
+				currentPage: 1
 			};
+		},
+
+		props: {
+			context: {
+				type: String,
+				default: '/'
+			},
+
+			posts: {
+				type: Array,
+				default: []
+			},
+
+			users: {
+				type: Object,
+				default: {}
+			}
 		},
 
 		methods: {
 			choose(i) {
 				this.chosen = i;
+			},
+
+			retrievePage(pageNo) {
+
 			}
+		},
+
+		components: {
+			Post
 		}
 	}
 </script>

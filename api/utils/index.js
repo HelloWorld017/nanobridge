@@ -1,8 +1,9 @@
+const {db} = require('../database');
 const fs = require('fs');
 const markdown = require('./markdown');
 const {promisify} = require('util');
 
-module.exports = {
+const Utils = {
 	getImageExtension(mimetype) {
 		let extension = 'png';
 		switch(mimetype) {
@@ -56,19 +57,48 @@ module.exports = {
 		return dec;
 	},
 
-	sanitizePostObject(post) {
-		const keys = [
-			'postId', 'content', 'images', 'author',
-			'createdAt', 'replyTo'
-		];
-
+	sanitizeObject(keys, object) {
 		const result = {};
-
 		keys.forEach(key => {
-			if(post[key] !== undefined) result[key] = post[key];
+			if(object[key] !== undefined) result[key] = object[key];
 		});
 
 		return result;
+	},
+
+	sanitizePostObject(post) {
+		return Utils.sanitizeObject([
+			'postId', 'content', 'images', 'author',
+			'createdAt', 'replyTo'
+		], post);
+	},
+
+	sanitizeUserObject(user) {
+		return Utils.sanitizeObject([
+			'username', 'background', 'profile', 'loginName', 'descriptions', 'acl'
+		], user);
+	},
+
+	async mapPostObject(posts) {
+		const loginNames = [];
+		const sanitized = posts.map(post => {
+			loginNames.push(post.author);
+			return Utils.sanitizePostObject(post);
+		});
+
+		const users = (await db().collection('users').find({
+			loginName: {
+				$in: loginNames
+			}
+		}).toArray()).map(Utils.sanitizeUserObject).reduce((prev, curr) => {
+			prev[curr.loginName] = curr;
+			return prev;
+		}, {});
+
+		return {
+			posts: sanitized,
+			users
+		};
 	},
 
 	async exists(dir) {
@@ -97,3 +127,5 @@ module.exports = {
 		next();
 	}
 };
+
+module.exports = Utils;

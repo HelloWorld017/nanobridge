@@ -40,7 +40,9 @@ router.post('/', async (req, res) => {
 	if(req.authState) {
 		res.json({
 			ok: true,
-			token: req.authToken
+			token: req.authToken,
+			username: req.username,
+			acl: req.acl
 		});
 		return;
 	}
@@ -95,7 +97,8 @@ router.post('/', async (req, res) => {
 	res.json({
 		ok: true,
 		token,
-		username: user.username
+		username: user.username,
+		acl: user.acl
 	});
 });
 

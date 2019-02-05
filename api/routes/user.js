@@ -2,7 +2,7 @@ const config = require('../config');
 const crypto = require('crypto');
 const {db} = require('../database');
 const fs = require('fs');
-const {getImageExtension, requireACL} = require('../utils');
+const {getImageExtension, requireACL, sanitizeUserObject} = require('../utils');
 const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
@@ -34,13 +34,9 @@ router.get('/:userLoginName', async (req, res) => {
 		return;
 	}
 
-	const {username, background, profile, loginName, descriptions, acl} = user;
-
 	res.json({
 		ok: true,
-		user: {
-			username, background, profile, loginName, descriptions, acl
-		}
+		user: sanitizeUserObject(user)
 	});
 });
 

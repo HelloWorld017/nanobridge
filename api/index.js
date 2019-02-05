@@ -34,7 +34,7 @@ app.use(async (req, res, next) => {
 
 	let token = {};
 	let authedTo = [];
-	let acl = config.store.acl.guest;
+	let acl = [];
 
 	try {
 		token = await promisify(jwt.verify)(authToken, config.store.secret);

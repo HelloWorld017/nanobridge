@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const {db} = require('../database');
 const fs = require('fs');
-const {exists, hexToDec, getImageExtension, markdown, requireACL, sanitizePostObject} = require('../utils');
+const {exists, hexToDec, getImageExtension, mapPostObject,
+	markdown, requireACL, sanitizePostObject, sanitizeUserObject} = require('../utils');
 const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
@@ -32,10 +33,7 @@ router.get('/', requireACL('postRead'), async (req, res) => {
 		]
 	}).limit(25).skip((page - 1) * 25).toArray();
 
-	res.json({
-		ok: true,
-		posts: posts.map(sanitizePostObject)
-	});
+	res.json(Object.assign({ok: true}, await mapPostObject(posts)));
 });
 
 router.get('/:postId(\\d+)', requireACL('postRead'), async (req, res) => {
@@ -62,7 +60,8 @@ router.get('/:postId(\\d+)', requireACL('postRead'), async (req, res) => {
 
 	res.json({
 		ok: true,
-		post: sanitizePostObject(post)
+		post: sanitizePostObject(post),
+		user: sanitizeUserObject(await db().collection('users').findOne({loginName: post.author}))
 	});
 });
 
@@ -84,12 +83,33 @@ router.get('/:postId(\\d+)/replies', requireACL('postRead'), async (req, res) =>
 
 	const posts = await db().collection('posts').find({
 		replyTo: postId
-	}).toArray();
+	}).limit(25).skip((page - 1) * 25).toArray();
 
-	res.json({
-		ok: true,
-		post: posts.map(sanitizePostObject)
-	});
+	res.json(Object.assign({ok: true}, await mapPostObject(posts)));
+});
+
+router.get('/written-by/:loginName', requireACL('postRead'), async (req, res) => {
+	const {loginName} = req.params;
+
+	if(typeof loginName !== 'string') {
+		res.status(400).json({
+			ok: false,
+			reason: 'wrong-arguments'
+		});
+		return;
+	}
+
+	let page = 1;
+
+	if(typeof req.query.page === 'number' && isFinite(req.query.page) && req.query.page > 0) {
+		page = req.query.page;
+	}
+
+	const posts = await db().collection('posts').find({
+		author: loginName
+	}).limit(25).skip((page - 1) * 25).toArray();
+
+	res.json(Object.assign({ok: true}, await mapPostObject(posts)));
 });
 
 router.use((req, res, next) => {
