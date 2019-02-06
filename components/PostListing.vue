@@ -1,30 +1,36 @@
 <template>
 	<div class="PostListing">
-		<div class="PostListing__narrow">
-			<div class="PostListing__chooser Chooser">
-				<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
-					글
-				</button>
+		<template v-if="hasPerm">
+			<div class="PostListing__narrow">
+				<div class="PostListing__chooser Chooser">
+					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
+						글
+					</button>
 
-				<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
-					앨범
-				</button>
+					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
+						앨범
+					</button>
 
-				<div class="Chooser__highlight"></div>
-			</div>
-		</div>
-
-		<div class="PostListing__list">
-			<template v-for="(post, index) in posts">
-				<div class="PostListing__narrow">
-					<post :key="`${post.postId}-post`" :post="post" :user="users[post.author]"></post>
+					<div class="Chooser__highlight"></div>
 				</div>
+			</div>
 
-				<!--
-					<div :key="`${post.postId}-divider}`" class="PostDivider" v-if="index !== posts.length - 1"></div>
-				-->
-			</template>
-		</div>
+			<div class="PostListing__list">
+				<template v-for="(post, index) in posts">
+					<div class="PostListing__narrow">
+						<post :key="`${post.postId}-post`" :post="post" :user="users[post.author]"></post>
+					</div>
+				</template>
+			</div>
+		</template>
+		<template v-else>
+			<div class="PostListing__noperm PostListing__narrow">
+				<i class="PostListing__noperm__icon mdi mdi-alert-outline"></i>
+				<div class="PostListing__noperm__text">
+					글들을 보시려면 로그인 / 회원가입을 해주세요!
+				</div>
+			</div>
+		</template>
 	</div>
 </template>
 
@@ -45,6 +51,21 @@
 			width: 95vw;
 
 			margin: 0 auto;
+		}
+
+		&__noperm {
+			background: #202020;
+			padding: 80px 0;
+			color: #909090;
+			text-align: center;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-size: 1.5rem;
+			font-weight: 700;
+
+			&__icon {
+				color: #0097a7;
+				font-size: 5rem;
+			}
 		}
 	}
 
@@ -98,10 +119,6 @@
 			left: 50%;
 		}
 	}
-
-	.PostDivider {
-
-	}
 </style>
 
 <script>
@@ -129,6 +146,12 @@
 			users: {
 				type: Object,
 				default: {}
+			}
+		},
+
+		computed: {
+			hasPerm() {
+				return this.$store.state.auth.acl.includes('postRead');
 			}
 		},
 

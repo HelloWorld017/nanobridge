@@ -12,6 +12,7 @@
     "api": "node index"
   },
   "dependencies": {
+    "@mdi/font": "^3.4.93",
     "@nuxtjs/axios": "^5.3.6",
     "body-parser": "^1.18.3",
     "cookie-parser": "^1.4.3",

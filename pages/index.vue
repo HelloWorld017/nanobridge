@@ -132,7 +132,7 @@
 		},
 
 		async asyncData({$axios}) {
-			const {posts, users} = (await $axios('/api/post/')).data;
+			const {posts, users} = await $axios.$get('/api/post/');
 
 			return {posts: posts || [], users: users || {}};
 		},
