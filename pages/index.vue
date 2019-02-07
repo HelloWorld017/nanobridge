@@ -15,7 +15,7 @@
 		</header>
 
 		<div class="Documents">
-			<post-listing :posts="posts" :users="users"></post-listing>
+			<post-listing v-bind="posts"></post-listing>
 		</div>
 	</main>
 </template>
@@ -104,6 +104,8 @@
 	import PostListing from "~/components/PostListing.vue";
 
 	export default {
+		watchQuery: ['page'],
+
 		computed: {
 			siteName() {
 				return this.$store.state.site.name;
@@ -131,10 +133,11 @@
 			};
 		},
 
-		async asyncData({$axios}) {
-			const {posts, users} = await $axios.$get('/api/post/');
+		async asyncData({$axios, query}) {
+			const params = query.page ? {page: query.page} : {};
+			const posts = await $axios.$get('/api/post/', {params});
 
-			return {posts: posts || [], users: users || {}};
+			return {posts};
 		},
 
 		components: {

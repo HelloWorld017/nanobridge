@@ -19,33 +19,58 @@ const upload = multer({
 	}
 });
 
+const POSTS_PER_PAGE = 2;
+
+router.use((req, res, next) => {
+	req.nanoPosts = {
+		getPage() {
+			let page = 1;
+
+			if(req.query.page) {
+				const parsedPage = parseInt(req.query.page);
+				if(isFinite(parsedPage) && parsedPage > 0) {
+					page = parsedPage;
+				}
+			}
+
+			return page;
+		},
+
+		async getDocuments(query) {
+			const page = this.getPage();
+			const posts = await db().collection('posts')
+				.find(query)
+				.limit(POSTS_PER_PAGE)
+				.sort({createdAt: -1})
+				.skip((page - 1) * POSTS_PER_PAGE)
+				.toArray();
+
+			const maxPages = Math.ceil(await db().collection('posts').countDocuments(query) / POSTS_PER_PAGE);
+			return Object.assign({
+				ok: true,
+				pagination: {
+					current: page,
+					max: Math.max(1, maxPages),
+					perPage: POSTS_PER_PAGE
+				}
+			}, await mapPostObject(posts));
+		}
+	};
+
+	next();
+});
+
 router.get('/', requireACL('postRead'), async (req, res) => {
-	let page = 1;
-
-	if(typeof req.query.page === 'number' && isFinite(req.query.page) && req.query.page > 0) {
-		page = req.query.page;
-	}
-
-	const posts = await db().collection('posts').find({
+	res.json(await req.nanoPosts.getDocuments({
 		$or: [
 			{replyTo: {$exists: false}},
 			{replyTo: null}
 		]
-	}).limit(25).skip((page - 1) * 25).toArray();
-
-	res.json(Object.assign({ok: true}, await mapPostObject(posts)));
+	}));
 });
 
 router.get('/:postId(\\d+)', requireACL('postRead'), async (req, res) => {
 	const {postId} = req.params;
-	if(typeof postId !== 'string') {
-		res.status(400).json({
-			ok: false,
-			reason: 'wrong-arguments'
-		});
-		return;
-	}
-
 	const post = await db().collection('posts').findOne({
 		postId: postId
 	});
@@ -67,49 +92,44 @@ router.get('/:postId(\\d+)', requireACL('postRead'), async (req, res) => {
 
 router.get('/:postId(\\d+)/replies', requireACL('postRead'), async (req, res) => {
 	const {postId} = req.params;
-	if(typeof postId !== 'string') {
-		res.status(400).json({
-			ok: false,
-			reason: 'wrong-arguments'
-		});
-		return;
-	}
 
-	let page = 1;
-
-	if(typeof req.query.page === 'number' && isFinite(req.query.page) && req.query.page > 0) {
-		page = req.query.page;
-	}
-
-	const posts = await db().collection('posts').find({
+	res.json(await req.nanoPosts.getDocuments({
 		replyTo: postId
-	}).limit(25).skip((page - 1) * 25).toArray();
-
-	res.json(Object.assign({ok: true}, await mapPostObject(posts)));
+	}));
 });
 
 router.get('/written-by/:loginName', requireACL('postRead'), async (req, res) => {
 	const {loginName} = req.params;
 
-	if(typeof loginName !== 'string') {
-		res.status(400).json({
+	res.json(await req.nanoPosts.getDocuments({
+		author: loginName
+	}));
+});
+
+router.get('/written-by/:loginName/:postId/page', requireACL('postRead'), async (req, res) => {
+	const {loginName, postId} = req.params;
+	const post = await db().collection('posts').findOne({
+		postId: postId
+	});
+
+	if(!post) {
+		res.status(404).json({
 			ok: false,
-			reason: 'wrong-arguments'
+			reason: 'post-does-not-exist'
 		});
 		return;
 	}
 
-	let page = 1;
+	const documentCounts = await db().collection('posts').countDocuments({
+		createdAt: {
+			$gte: post.createdAt
+		}
+	});
 
-	if(typeof req.query.page === 'number' && isFinite(req.query.page) && req.query.page > 0) {
-		page = req.query.page;
-	}
-
-	const posts = await db().collection('posts').find({
-		author: loginName
-	}).limit(25).skip((page - 1) * 25).toArray();
-
-	res.json(Object.assign({ok: true}, await mapPostObject(posts)));
+	res.json({
+		ok: true,
+		page: Math.floor(documentCounts / POSTS_PER_PAGE) + 1
+	});
 });
 
 router.use((req, res, next) => {

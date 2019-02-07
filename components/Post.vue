@@ -17,6 +17,21 @@
 
 				<time class="Post__date" :datetime="toIsoTime(post.createdAt)">{{toReadable(post.createdAt)}}</time>
 			</div>
+
+			<div v-if="post.replyTo !== undefined">
+				<div class="Post__reply Reply">
+					<i class="Reply__icon mdi mdi-reply"></i>
+					<div class="Reply__content">
+						<template v-if="post.replyTo === null">
+							삭제된 글
+						</template>
+						<template v-else>
+							asdf
+						</template>
+					</div>
+				</div>
+			</div>
+
 			<div class="Post__content Markdown" v-html="post.content"></div>
 			<div class="Post__images"
 				:class="[`Post__images--${pickingImage}`, {'Post__images--plus': leftImage > 0}]"
@@ -39,6 +54,7 @@
 		display: flex;
 		margin: 30px;
 		margin-bottom: 48px;
+		width: 100%;
 
 		color: #d0d0d0;
 		font-family: 'Noto Sans CJK KR', sans-serif;
@@ -52,6 +68,7 @@
 
 		&__column {
 			padding-left: 16px;
+			flex: 1;
 		}
 
 		&__username {
@@ -71,6 +88,7 @@
 
 		&__images {
 			display: grid;
+			width: 100%;
 			height: 500px;
 			border-radius: 10px;
 			overflow: hidden;
@@ -195,6 +213,20 @@
 				height: 100%;
 				object-fit: cover;
 			}
+		}
+	}
+
+	.Reply {
+		display: flex;
+		align-items: center;
+
+		border-left: 3px solid #404040;
+		margin-left: 16px;
+		height: 64px;
+
+		&__icon {
+			font-size: 1.3rem;
+			padding: 0 16px;
 		}
 	}
 </style>
