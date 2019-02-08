@@ -1,9 +1,71 @@
 <template>
-	<nav class="Navigation" :class="{'Navigation--top': isTop, 'Navigation--connect': connectHeader}">
-		<nuxt-link class="Navigation__link" to="/">
+	<nav class="Navigation" :class="{'Navigation--top': isTop, 'Navigation--connect': connectHeader}" role="navigation">
+		<nuxt-link class="Navigation__brand NavButton" to="/">
 			<nano-bridge class="Navigation__logo"></nano-bridge>
-			<span class="Navigation__brand">{{siteName}}</span>
+			<span class="Navigation__title">{{siteName}}</span>
 		</nuxt-link>
+
+		<div class="Navigation__auth"
+			:class="{'Navigation__auth--opened': loginMenuOpened}"
+			v-click-outside="hideLoginMenu">
+
+			<a class="Navigation__auth__state NavButton" @click="toggleLoginMenu">
+				<template v-if="authState">
+					{{username}}
+					<span class="Navigation__auth__loginName">
+						(@{{loginName}})
+					</span>
+				</template>
+				<template v-else>
+						로그인
+				</template>
+			</a>
+
+			<transition name="Fade">
+				<form class="LoginMenu NavDialog"
+					role="dialog"
+					@submit.prevent="login"
+					v-if="loginMenuOpened && !authState">
+
+					<input class="LoginMenu__loginName Input"
+						type="text"
+						v-model="loginNameInput"
+						placeholder="로그인 이름"
+						spellcheck="false" autocapitalize="off"
+						autocorrect="off" autocomplete="off">
+
+					<input class="LoginMenu__password Input"
+						type="password"
+						v-model="passwordInput"
+						placeholder="비밀번호">
+
+					<button class="LoginMenu__button"
+						:class="{'LoginMenu__button--fail': failed}"
+						@click.prevent="login">
+
+						로그인 <i class="mdi mdi-arrow-right"></i>
+					</button>
+
+					<transition name="Fade">
+						<div class="LoginMenu__fail" v-if="failReason">
+							{{failReason}}
+						</div>
+					</transition>
+				</form>
+			</transition>
+
+			<transition name="Fade">
+				<div class="UserMenu NavDialog" role="dialog" v-if="loginMenuOpened && authState">
+					<button class="UserMenu__button" @click="logout">
+						<i class="mdi mdi-arrow-top-left"></i> 로그아웃
+					</button>
+
+					<nuxt-link class="UserMenu__button" to="/user">
+						<i class="mdi mdi-arrow-right"></i> 프로필
+					</nuxt-link>
+				</div>
+			</transition>
+		</div>
 	</nav>
 </template>
 
@@ -14,18 +76,18 @@
 		position: fixed;
 		top: 0;
 		left: 0;
-		padding: 0 32px;
+		padding: 0 5vw;
 		box-sizing: border-box;
 		z-index: 1;
 
 		display: flex;
-		align-items: center;
+		justify-content: space-between;
+		align-items: stretch;
 
 		background: #161616;
 		transition: all .4s ease;
-		//box-shadow: 0 2px 4px 1px rgba(0, 0, 0, .3);
 
-		font-family: 'Titillium Web', sans-serif;
+		font-family: 'Titillium Web', 'Noto Sans CJK KR', sans-serif;
 		font-size: 1.7rem;
 		font-weight: 500;
 
@@ -33,7 +95,7 @@
 			background: transparent;
 		}
 
-		&__link {
+		&__brand {
 			position: relative;
 
 			display: flex;
@@ -64,10 +126,6 @@
 				.NanoBridge__default {
 					opacity: 0;
 				}
-
-				&::after {
-					transform: scaleX(1);
-				}
 			}
 		}
 
@@ -79,16 +137,165 @@
 				transition: all .4s ease;
 			}
 		}
+
+		&__auth {
+			position: relative;
+			padding: 0 30px;
+			display: flex;
+			align-items: center;
+			transition: all .4s ease;
+
+			&--opened {
+				background: rgba(0, 0, 0, .8);
+
+				.NavButton::after {
+					border-color: transparent;
+				}
+			}
+
+			&__loginName {
+				font-size: 1rem;
+				font-weight: 400;
+			}
+
+			&__state {
+				cursor: pointer;
+				color: #d0d0d0;
+				font-size: 1.3rem;
+				font-weight: 100;
+
+				&--unauthed {
+					font-weight: 900;
+				}
+
+			}
+		}
+	}
+
+	.NavButton {
+		&::after {
+			content: '';
+
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			width: 100%;
+
+			border-bottom: 3px solid rgba(255, 255, 255, .2);
+			transition: all .4s ease;
+			transform: scaleX(0);
+		}
+
+		&:hover {
+			&::after {
+				transform: scaleX(1);
+			}
+		}
+	}
+
+	.NavDialog {
+		position: absolute;
+		top: 80px;
+		right: 0;
+		padding: 30px;
+		background: rgba(0, 0, 0, .8);
+	}
+
+	.LoginMenu {
+		&__loginName {
+			margin-bottom: 5px;
+		}
+
+		&__button {
+			display: block;
+			margin-top: 20px;
+			margin-left: auto;
+			padding: 10px 30px;
+			border: 1px solid #00bcd4;
+
+			color: #d0d0d0;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-size: .9rem;
+
+			cursor: pointer;
+			background: transparent;
+			transition: all .4s ease;
+			outline: none;
+
+			&:hover {
+				background: #00bcd4;
+				color: #202020;
+			}
+
+			&--fail {
+				border-color: #f44336;
+				animation-name: ShakeHard;
+				animation-duration: 100ms;
+				animation-timing-function: ease-in-out;
+				animation-iteration-count: 8;
+
+				&:hover {
+					background: #f44336;
+				}
+			}
+		}
+
+		&__fail {
+			margin-top: 5px;
+
+			color: #f44336;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-weight: 700;
+			font-size: .8rem;
+		}
+	}
+
+	.UserMenu {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+
+		background: transparent;
+		padding: 0;
+
+		&__button {
+			display: flex;
+			justify-content: flex-start;
+			padding: 20px 50px;
+
+			cursor: pointer;
+			border: none;
+			background: rgba(0, 0, 0, .8);
+			outline: none;
+			transition: all .4s ease;
+
+			color: #d0d0d0;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-size: 1rem;
+			font-weight: 700;
+			text-decoration: none;
+
+			&:hover {
+				background: rgba(0, 151, 167, .8);
+			}
+		}
 	}
 </style>
 
 <script>
 	import NanoBridge from "~/assets/images/NanoBridge.svg?inline";
+	import ClickOutside from "vue-click-outside";
 
 	export default {
 		data() {
 			return {
-				isTop: true
+				isTop: true,
+				loginNameInput: '',
+				passwordInput: '',
+				loginMenuOpened: false,
+				failReason: null,
+				failed: false
 			};
 		},
 
@@ -103,11 +310,56 @@
 
 			siteDescription() {
 				return this.$store.state.site.description;
+			},
+
+			authState() {
+				return this.$store.getters['auth/authState'];
+			},
+
+			loginName() {
+				return this.$store.state.auth.loginName;
+			},
+
+			username() {
+				return this.$store.state.auth.username;
+			}
+		},
+
+		methods: {
+			toggleLoginMenu() {
+				this.loginMenuOpened = !this.loginMenuOpened;
+			},
+
+			hideLoginMenu() {
+				this.loginMenuOpened = false;
+			},
+
+			async login() {
+				try {
+					await this.$store.dispatch('auth/login', {
+						loginName: this.loginNameInput,
+						password: this.passwordInput
+					});
+					this.loginMenuOpened = false;
+				} catch({message}) {
+					this.failReason = message;
+					this.failed = true;
+
+					setTimeout(() => this.failed = false, 1000);
+				}
+			},
+
+			async logout() {
+
 			}
 		},
 
 		components: {
 			NanoBridge
+		},
+
+		directives: {
+			ClickOutside,
 		},
 
 		mounted() {

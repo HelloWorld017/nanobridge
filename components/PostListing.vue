@@ -15,9 +15,20 @@
 				</div>
 
 				<div class="PostListing__pagination Pagination" v-if="isPageMode">
-					<template v-for="i in pagination.max">
-						<nuxt-link class="Pagination__page" :to="getPageLink(i)" :key="`pagination-${i}`">
-							{{i}}
+					<template v-for="(x, i) in paginationItems">
+						<span class="Pagination__page Pagination__page--disabled"
+							:key="`pagination-${i}`"
+							v-if="x === null">
+
+							<i class="mdi mdi-dots-horizontal"></i>
+						</span>
+
+						<nuxt-link class="Pagination__page"
+							:to="getPageLink(x)"
+							:key="`pagination-${i}`"
+							v-else>
+
+							{{x}}
 						</nuxt-link>
 					</template>
 				</div>
@@ -33,7 +44,8 @@
 						<div class="PostListing__split">
 							<div class="PostListing__split__wrapper PostListing__narrow">
 								<nuxt-link class="PostListing__split__text"
-									:to="getPageLink(getPageByIndex(index + 1))">
+									:to="getPageLink(getPageByIndex(index + 1))"
+									@click.native="scrollTop">
 
 									다음 페이지에서 보기
 									<i class="mdi mdi-arrow-right"></i>
@@ -41,11 +53,17 @@
 							</div>
 
 							<div class="PostListing__split__indicator">
-								{{pagination.current}} / {{pagination.max}}
+								{{getPageByIndex(index)}} / {{paginationAppend.max}}
 							</div>
 						</div>
 					</template>
 				</template>
+
+				<pagination-trigger
+					ref="trigger"
+					:next="paginationAppend.current < paginationAppend.max"
+					:load-next="loadNext">
+				</pagination-trigger>
 			</div>
 		</template>
 		<template v-else>
@@ -200,15 +218,16 @@
 
 			width: 32px;
 			height: 32px;
-			background: #161616;
+			background: #202020;
 
 			color: #d0d0d0;
-			text-decoration: none;
 			border-radius: 50%;
+			transition: all .4s ease;
 
 			font-family: 'Titillium Web', sans-serif;
 			font-size: .8rem;
 			font-weight: 700;
+			text-decoration: none;
 
 			&:not(:last-child) {
 				margin-right: 10px;
@@ -229,15 +248,17 @@
 </style>
 
 <script>
+	import PaginationTrigger from "./PaginationTrigger.vue";
 	import Post from "./Post.vue";
 
 	export default {
 		data() {
 			return {
 				chosen: 1,
-				currentPage: 1,
 				additionalPosts: [],
-				additionalUsers: {}
+				additionalUsers: {},
+				updatedPagination: null,
+				scrollWhenPageChange: false
 			};
 		},
 
@@ -245,6 +266,11 @@
 			context: {
 				type: String,
 				default: '/'
+			},
+
+			apiContext: {
+				type: String,
+				default: '/api/post'
 			},
 
 			posts: {
@@ -282,6 +308,32 @@
 
 			postsAppend() {
 				return this.posts.concat(this.additionalPosts);
+			},
+
+			paginationAppend() {
+				return this.updatedPagination || this.pagination;
+			},
+
+			paginationItems() {
+				let items = [];
+
+				const min = 1;
+				const current = this.paginationAppend.current;
+				const max = this.paginationAppend.max;
+
+				if(current - 3 > min + 1) {
+					items.push(min, null);
+				}
+
+				for(let i = Math.max(min, current - 2); i <= Math.min(current + 2, max); i++) {
+					items.push(i);
+				}
+
+				if(current + 2 < max - 1) {
+					items.push(null, max);
+				}
+
+				return items;
 			}
 		},
 
@@ -290,12 +342,8 @@
 				this.chosen = i;
 			},
 
-			retrievePage(pageNo) {
-
-			},
-
 			getPageByIndex(index) {
-				return Math.floor(index / this.pagination.perPage) + this.pagination.current;
+				return Math.floor(index / this.paginationAppend.perPage) + this.pagination.current;
 			},
 
 			getPageLink(page) {
@@ -303,18 +351,57 @@
 			},
 
 			isLastOfPage(index) {
-				return (index + 1) % this.pagination.perPage === 0 &&
+				return (index + 1) % this.paginationAppend.perPage === 0 &&
 					index !== 0 &&
-					this.pagination.current !== this.pagination.max;
+					this.getPageByIndex(index) !== this.paginationAppend.max;
+			},
+
+			async loadNext() {
+				const newPage = await this.$axios.$get(`${this.apiContext}?page=${this.paginationAppend.current + 1}`);
+
+				this.additionalPosts.push(...newPage.posts);
+				this.additionalUsers = Object.assign({}, this.additionalUsers, newPage.users);
+				this.updatedPagination = newPage.pagination;
+			},
+
+			refresh() {
+				this.additionalPosts = [];
+				this.updatedPagination = null;
+
+				this.$nextTick(() => {
+					this.$refs.trigger.refresh();
+				});
+			},
+
+			scrollTop() {
+				this.scrollWhenPageChange = true;
+			}
+		},
+
+		watch: {
+			'$route.query.page'() {
+				if(this.scrollWhenPageChange) {
+					this.$nextTick(() => {
+						const top = window.innerHeight * 0.6;
+						try {
+							window.scrollTo({
+								top,
+								left: 0,
+								behavior: 'smooth'
+							});
+						} catch(e) {
+							window.scrollTo(top, 0);
+						}
+					});
+
+					this.scrollWhenPageChange = false;
+				}
 			}
 		},
 
 		components: {
+			PaginationTrigger,
 			Post
-		},
-
-		mounted() {
-			this.currentPage = this.pagination.current;
 		}
 	}
 </script>

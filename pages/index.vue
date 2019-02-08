@@ -15,7 +15,7 @@
 		</header>
 
 		<div class="Documents">
-			<post-listing v-bind="posts"></post-listing>
+			<post-listing ref="listing" v-bind="posts"></post-listing>
 		</div>
 	</main>
 </template>
@@ -138,6 +138,14 @@
 			const posts = await $axios.$get('/api/post/', {params});
 
 			return {posts};
+		},
+
+		watch: {
+			'$route.query.page'() {
+				this.$nextTick(() => {
+					this.$refs.listing.refresh();
+				});
+			}
 		},
 
 		components: {
