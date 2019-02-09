@@ -69,7 +69,7 @@ const Utils = {
 	sanitizePostObject(post) {
 		return Utils.sanitizeObject([
 			'postId', 'content', 'images', 'author',
-			'createdAt', 'replyTo'
+			'createdAt', 'replyTo', 'replyCount'
 		], post);
 	},
 

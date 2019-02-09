@@ -197,9 +197,18 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 
 		if(replyingPost && !replyingPost.replyTo && replyingPost.author === author) {
 			post.replyTo = replyTo;
+
+			await db().collection('posts').findOneAndUpdate(
+				{postId: replyTo},
+				{$inc: {replyCount: 1}}
+			);
 		} else {
 			post.replyTo = null;
 		}
+	}
+
+	if(post.replyTo === undefined) {
+		post.replyCount = 0;
 	}
 
 	await db().collection('posts').insertOne(post);
@@ -318,6 +327,13 @@ router.delete('/:postId(\\d+)/', requireACL('postDelete'), async (req, res) => {
 		}
 
 		await promisify(fs.rmdir)(postBasedir);
+	}
+
+	if(originalPost.replyTo) {
+		await db().collection('posts').findOneAndUpdate(
+			{postId: originalPost.replyTo},
+			{$inc: {replyCount: -1}}
+		);
 	}
 
 	await db().collection('posts').updateMany(

@@ -21,11 +21,6 @@
 </template>
 
 <style lang="less" scoped>
-	.Container {
-		background: #161616;
-		min-height: 100vh;
-	}
-
 	.Header {
 		position: relative;
 		height: 75vh;

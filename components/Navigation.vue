@@ -6,20 +6,22 @@
 		</nuxt-link>
 
 		<div class="Navigation__auth"
-			:class="{'Navigation__auth--opened': loginMenuOpened}"
-			v-click-outside="hideLoginMenu">
+			:class="{'Navigation__auth--opened': loginMenuOpened || userMenuOpened}"
+			v-click-outside="hideMenu">
 
-			<a class="Navigation__auth__state NavButton" @click="toggleLoginMenu">
-				<template v-if="authState">
+			<template v-if="authState">
+				<a class="Navigation__auth__state NavButton" @click="toggleUserMenu">
 					{{username}}
 					<span class="Navigation__auth__loginName">
 						(@{{loginName}})
 					</span>
-				</template>
-				<template v-else>
-						로그인
-				</template>
-			</a>
+				</a>
+			</template>
+			<template v-else>
+				<a class="Navigation__auth__state NavButton" @click="toggleLoginMenu">
+					로그인
+				</a>
+			</template>
 
 			<transition name="Fade">
 				<form class="LoginMenu NavDialog"
@@ -55,7 +57,7 @@
 			</transition>
 
 			<transition name="Fade">
-				<div class="UserMenu NavDialog" role="dialog" v-if="loginMenuOpened && authState">
+				<div class="UserMenu NavDialog" role="dialog" v-if="userMenuOpened && authState">
 					<button class="UserMenu__button" @click="logout">
 						<i class="mdi mdi-arrow-top-left"></i> 로그아웃
 					</button>
@@ -255,6 +257,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
+		min-width: 180px;
 
 		background: transparent;
 		padding: 0;
@@ -294,6 +297,7 @@
 				loginNameInput: '',
 				passwordInput: '',
 				loginMenuOpened: false,
+				userMenuOpened: false,
 				failReason: null,
 				failed: false
 			};
@@ -330,8 +334,13 @@
 				this.loginMenuOpened = !this.loginMenuOpened;
 			},
 
-			hideLoginMenu() {
+			toggleUserMenu() {
+				this.userMenuOpened = !this.userMenuOpened;
+			},
+
+			hideMenu() {
 				this.loginMenuOpened = false;
+				this.userMenuOpened = false;
 			},
 
 			async login() {
@@ -340,7 +349,7 @@
 						loginName: this.loginNameInput,
 						password: this.passwordInput
 					});
-					this.loginMenuOpened = false;
+					this.hideMenu();
 				} catch({message}) {
 					this.failReason = message;
 					this.failed = true;
@@ -350,7 +359,8 @@
 			},
 
 			async logout() {
-
+				await this.$store.dispatch('auth/logout');
+				this.hideMenu();
 			}
 		},
 
