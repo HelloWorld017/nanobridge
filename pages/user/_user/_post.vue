@@ -50,10 +50,11 @@
 
 	.Columns {
 		display: flex;
+		justify-content: center;
 	}
 
 	.User {
-		margin-left: 300px;
+		flex: 1;
 
 		&__profile {
 			width: 196px;
@@ -64,7 +65,7 @@
 	}
 
 	.Documents {
-		flex: 1;
+		flex: 3;
 	}
 
 	@media (max-width: 768px) {

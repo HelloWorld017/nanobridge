@@ -36,7 +36,7 @@
 
 			<div class="PostListing__list">
 				<template v-for="(post, index) in postsAppend">
-					<div class="PostListing__narrow">
+					<div class="PostListing__wrapper PostListing__narrow">
 						<post :key="`${post.postId}-post`" :post="post" :user="usersAppend[post.author]"></post>
 					</div>
 
@@ -96,7 +96,7 @@
 
 		&__narrow {
 			max-width: 768px;
-			width: 95vw;
+			width: 95%;
 
 			margin: 0 auto;
 		}
@@ -154,6 +154,20 @@
 				font-weight: 100;
 				font-family: "Noto Sans CJK KR", sans-serif;
 				color: #2a2a2a;
+			}
+		}
+
+		&__list {
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__wrapper {
+			display: flex;
+
+			& > * {
+				flex: 1;
 			}
 		}
 	}
