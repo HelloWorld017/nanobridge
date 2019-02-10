@@ -5,10 +5,16 @@
 				<div class="PostListing__chooser Chooser">
 					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
 						글
+						<span class="Chooser__value">
+							{{counts.post}}
+						</span>
 					</button>
 
 					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
 						앨범
+						<span class="Chooser__value">
+							{{counts.album}}
+						</span>
 					</button>
 
 					<div class="Chooser__highlight"></div>
@@ -265,6 +271,8 @@
 	import PaginationTrigger from "./PaginationTrigger.vue";
 	import Post from "./Post.vue";
 
+	import scrollTo from "../assets/js/scrollTo";
+
 	export default {
 		data() {
 			return {
@@ -288,13 +296,15 @@
 			},
 
 			posts: {
-				type: Array,
-				default: []
+				type: Array
 			},
 
 			users: {
-				type: Object,
-				default: {}
+				type: Object
+			},
+
+			counts: {
+				type: Object
 			},
 
 			pagination: {
@@ -397,15 +407,7 @@
 				if(this.scrollWhenPageChange) {
 					this.$nextTick(() => {
 						const top = window.innerHeight * 0.6;
-						try {
-							window.scrollTo({
-								top,
-								left: 0,
-								behavior: 'smooth'
-							});
-						} catch(e) {
-							window.scrollTo(top, 0);
-						}
+						scrollTo(top);
 					});
 
 					this.scrollWhenPageChange = false;

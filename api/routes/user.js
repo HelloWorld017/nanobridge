@@ -305,14 +305,14 @@ router.patch('/:loginName', requireACL('userUpdate'), async (req, res) => {
 			}
 		});
 
-		setObject.descs = descs;
+		setObject.descriptions = descs;
 	}
 
 	if(typeof descriptionKeys === 'string') {
 		const conserveDescs = descriptionKeys.split(',');
 		descs = descs.filter(v => conserveDescs.includes(v.key));
 
-		setObject.descs = descs;
+		setObject.descriptions = descs;
 	}
 
 	await db().collection('users').findOneAndUpdate({loginName}, {

@@ -45,13 +45,26 @@ router.use((req, res, next) => {
 				.skip((page - 1) * POSTS_PER_PAGE)
 				.toArray();
 
-			const maxPages = Math.ceil(await db().collection('posts').countDocuments(query) / POSTS_PER_PAGE);
+			const postCounts = await db().collection('posts').countDocuments(query);
+			const albumCounts = await db().collection('posts').countDocuments({
+				$and: [
+					query,
+					{images: {$not: {$size: 0}}}
+				]
+			});
+
+			const maxPages = Math.ceil(postCounts / POSTS_PER_PAGE);
 			return Object.assign({
 				ok: true,
 				pagination: {
 					current: page,
 					max: Math.max(1, maxPages),
 					perPage: POSTS_PER_PAGE
+				},
+
+				counts: {
+					post: postCounts,
+					album: albumCounts
 				}
 			}, await mapPostObject(posts));
 		}

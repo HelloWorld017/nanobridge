@@ -98,8 +98,6 @@
 		}
 
 		&__brand {
-			position: relative;
-
 			display: flex;
 			align-items: center;
 
@@ -107,20 +105,6 @@
 			text-decoration: none;
 
 			transition: all .4s ease;
-
-			&::after {
-				content: '';
-
-				position: absolute;
-				bottom: 0;
-				left: 0;
-				right: 0;
-				width: 100%;
-
-				border-bottom: 3px solid rgba(255, 255, 255, .2);
-				transition: all .4s ease;
-				transform: scaleX(0);
-			}
 
 			&:hover {
 				color: #fff;
@@ -175,6 +159,8 @@
 	}
 
 	.NavButton {
+		position: relative;
+
 		&::after {
 			content: '';
 
