@@ -1,5 +1,5 @@
 <template>
-	<main class="Container">
+	<main class="Main">
 		<navigation connect-header></navigation>
 		<header class="Header">
 			<img class="Header__background" :src="user.background" :alt="user.username">

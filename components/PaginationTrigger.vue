@@ -74,6 +74,7 @@
 			async preload(entries) {
 				if(!this.loadRequestFinished) return;
 				if(!this.next) {
+					console.log("Preload Cancelled");
 					this.loadFulfilled = true;
 					return;
 				}

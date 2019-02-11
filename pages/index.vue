@@ -1,5 +1,5 @@
 <template>
-	<main class="Container">
+	<main class="Main">
 		<navigation connect-header></navigation>
 		<header class="Header" :class="{'Header-full': registerEnabled}">
 			<div class="Header__background"></div>

@@ -3,9 +3,9 @@
 		<img class="Post__profile" :src="user.profile" :alt="user.username">
 		<div class="Post__column">
 			<div class="Post__author">
-				<span class="Post__username">
+				<nuxt-link :to="`/user/${user.loginName}`" class="Post__username">
 					{{user.username}}
-				</span>
+				</nuxt-link>
 
 				<span class="Post__loginname">
 					@{{user.loginName}}
@@ -74,6 +74,7 @@
 		&__username {
 			font-size: 1.2rem;
 			color: #4dd0e1;
+			text-decoration: none;
 		}
 
 		&__loginname {

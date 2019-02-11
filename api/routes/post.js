@@ -37,21 +37,25 @@ router.use((req, res, next) => {
 		},
 
 		async getDocuments(query) {
+			const isAlbum = req.query.album === '1';
+			const albumQuery = {
+				$and: [
+					query,
+					{images: {$not: {$size: 0}}}
+				]
+			};
+			const targetQuery = isAlbum ? albumQuery : query;
+
 			const page = this.getPage();
 			const posts = await db().collection('posts')
-				.find(query)
+				.find(targetQuery)
 				.limit(POSTS_PER_PAGE)
 				.sort({createdAt: -1})
 				.skip((page - 1) * POSTS_PER_PAGE)
 				.toArray();
 
-			const postCounts = await db().collection('posts').countDocuments(query);
-			const albumCounts = await db().collection('posts').countDocuments({
-				$and: [
-					query,
-					{images: {$not: {$size: 0}}}
-				]
-			});
+			const postCounts = await db().collection('posts').countDocuments(targetQuery);
+			const albumCounts = await db().collection('posts').countDocuments(albumQuery);
 
 			const maxPages = Math.ceil(postCounts / POSTS_PER_PAGE);
 			return Object.assign({

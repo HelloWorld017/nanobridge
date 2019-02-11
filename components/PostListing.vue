@@ -1,19 +1,19 @@
 <template>
 	<div class="PostListing">
 		<template v-if="hasPerm">
-			<div class="PostListing__narrow PostListing__header">
+			<div class="Container PostListing__header">
 				<div class="PostListing__chooser Chooser">
 					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
 						글
 						<span class="Chooser__value">
-							{{counts.post}}
+							{{beautifyCount(counts.post)}}
 						</span>
 					</button>
 
 					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
 						앨범
 						<span class="Chooser__value">
-							{{counts.album}}
+							{{beautifyCount(counts.album)}}
 						</span>
 					</button>
 
@@ -41,29 +41,43 @@
 			</div>
 
 			<div class="PostListing__list">
-				<template v-for="(post, index) in postsAppend">
-					<div class="PostListing__wrapper PostListing__narrow">
-						<post :key="`${post.postId}-post`" :post="post" :user="usersAppend[post.author]"></post>
+				<transition name="Fade">
+					<div class="PostListing__articles" v-if="!isAlbum">
+						<template v-for="(postsInPage, index) in postsAppend">
+							<div class="PostListing__wrapper Container" v-for="post in postsInPage">
+								<post :key="`${post.postId}-post`" :post="post" :user="usersAppend[post.author]"></post>
+							</div>
+
+							<listing-split
+								v-if="getPageByIndex(index) !== paginationAppend.max"
+								:link="getPageLink(getPageByIndex(index + 1))"
+								:page="getPageByIndex(index)"
+								:max="paginationAppend.max"
+								@navigate="scrollTop">
+							</listing-split>
+						</template>
 					</div>
 
-					<template v-if="isLastOfPage(index)">
-						<div class="PostListing__split">
-							<div class="PostListing__split__wrapper PostListing__narrow">
-								<nuxt-link class="PostListing__split__text"
-									:to="getPageLink(getPageByIndex(index + 1))"
-									@click.native="scrollTop">
-
-									다음 페이지에서 보기
-									<i class="mdi mdi-arrow-right"></i>
-								</nuxt-link>
+					<div class="PostListing__album" v-else>
+						<template v-for="(postsInPage, index) in postsAppend">
+							<div class="PostListing__albumPage Container">
+								<post-album
+									:key="`${post.postId}-post`"
+									:post="post"
+									v-for="post in postsInPage">
+								</post-album>
 							</div>
 
-							<div class="PostListing__split__indicator">
-								{{getPageByIndex(index)}} / {{paginationAppend.max}}
-							</div>
-						</div>
-					</template>
-				</template>
+							<listing-split
+								v-if="getPageByIndex(index) !== paginationAppend.max"
+								:link="getPageLink(getPageByIndex(index + 1))"
+								:page="getPageByIndex(index)"
+								:max="paginationAppend.max"
+								@navigate="scrollTop">
+							</listing-split>
+						</template>
+					</div>
+				</transition>
 
 				<pagination-trigger
 					ref="trigger"
@@ -73,7 +87,7 @@
 			</div>
 		</template>
 		<template v-else>
-			<div class="PostListing__noperm PostListing__narrow">
+			<div class="PostListing__noperm Container">
 				<i class="PostListing__noperm__icon mdi mdi-alert-outline"></i>
 				<div class="PostListing__noperm__text">
 					글들을 보시려면 로그인 / 회원가입을 해주세요!
@@ -98,13 +112,6 @@
 			border-radius: 16px;
 
 			background: #202020;
-		}
-
-		&__narrow {
-			max-width: 768px;
-			width: 95%;
-
-			margin: 0 auto;
 		}
 
 		&__noperm {
@@ -176,6 +183,21 @@
 				flex: 1;
 			}
 		}
+
+		&__albumPage {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+
+			&::after {
+				content: "";
+				flex: auto;
+			}
+		}
+	}
+
+	.PostAlbum {
+		margin: 20px;
 	}
 
 	.Chooser {
@@ -268,8 +290,10 @@
 </style>
 
 <script>
+	import ListingSplit from "./ListingSplit.vue";
 	import PaginationTrigger from "./PaginationTrigger.vue";
 	import Post from "./Post.vue";
+	import PostAlbum from "./PostAlbum.vue";
 
 	import scrollTo from "../assets/js/scrollTo";
 
@@ -322,16 +346,22 @@
 				return this.$store.state.auth.acl.includes('postRead');
 			},
 
+			isAlbum() {
+				return this.chosen === 2;
+			},
+
 			isPageMode() {
 				return !!this.$route.query.page;
 			},
 
 			usersAppend() {
+				if(this.isAlbum) return this.additionalUsers;
 				return Object.assign({}, this.users, this.additionalUsers);
 			},
 
 			postsAppend() {
-				return this.posts.concat(this.additionalPosts);
+				if(this.isAlbum) return this.additionalPosts;
+				return [this.posts].concat(this.additionalPosts);
 			},
 
 			paginationAppend() {
@@ -358,32 +388,44 @@
 				}
 
 				return items;
+			},
+
+			apiContextAppend() {
+				if(this.isAlbum) return `${this.apiContext}?album=1&`;
+				return `${this.apiContext}?album=0&`
 			}
 		},
 
 		methods: {
-			choose(i) {
+			async choose(i) {
 				this.chosen = i;
+				this.additionalPosts = [];
+				this.updatedPagination = null;
+
+				if(this.isAlbum) {
+					await this.loadNext(1);
+				}
+
+				this.$nextTick(() => {
+					this.$refs.trigger.refresh();
+				});
 			},
 
 			getPageByIndex(index) {
-				return Math.floor(index / this.paginationAppend.perPage) + this.pagination.current;
+				return index + this.pagination.current;
 			},
 
 			getPageLink(page) {
 				return `${this.context}?page=${page}`;
 			},
 
-			isLastOfPage(index) {
-				return (index + 1) % this.paginationAppend.perPage === 0 &&
-					index !== 0 &&
-					this.getPageByIndex(index) !== this.paginationAppend.max;
-			},
+			async loadNext(page = null) {
+				const nextPage = page === null ? this.paginationAppend.current + 1 : page;
+				const newPage = await this.$axios.$get(`${this.apiContextAppend}page=${nextPage}`);
 
-			async loadNext() {
-				const newPage = await this.$axios.$get(`${this.apiContext}?page=${this.paginationAppend.current + 1}`);
-
-				this.additionalPosts.push(...newPage.posts);
+				if(newPage.posts.length !== 0) {
+					this.additionalPosts.push(newPage.posts);
+				}
 				this.additionalUsers = Object.assign({}, this.additionalUsers, newPage.users);
 				this.updatedPagination = newPage.pagination;
 			},
@@ -399,6 +441,10 @@
 
 			scrollTop() {
 				this.scrollWhenPageChange = true;
+			},
+
+			beautifyCount(i) {
+
 			}
 		},
 
@@ -416,8 +462,10 @@
 		},
 
 		components: {
+			ListingSplit,
 			PaginationTrigger,
-			Post
+			Post,
+			PostAlbum
 		}
 	}
 </script>
