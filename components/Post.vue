@@ -251,6 +251,9 @@
 </style>
 
 <script>
+	import moment from 'moment';
+	moment.locale('ko');
+
 	export default {
 		props: {
 			post: {
@@ -284,8 +287,19 @@
 			},
 
 			toReadable(unix) {
-				const date = new Date(unix);
-				return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+				const current = moment();
+				const date = moment(unix);
+				const dateAfterWeek = date.clone().add(7, 'days');
+
+				if(current.isAfter(dateAfterWeek, 'day')) {
+					return date.format('LL');
+				}
+
+				if(!current.isSame(date, 'day')) {
+					return date.format('dddd');
+				}
+
+				return current.to(date);
 			},
 
 			showImage(img) {

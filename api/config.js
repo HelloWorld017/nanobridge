@@ -1,44 +1,51 @@
+const deepmerge = require('deepmerge');
 const fs = require('fs');
 
 module.exports = {
 	store: {},
 	path: './config.json',
+	default: {
+		secret: [...Array(5)]
+			.map(() => Math.random().toString(36).slice(2))
+			.join('')
+			.slice(0, Math.floor(Math.random() * 32) + 32),
+
+		user: {
+			maxSubUsers: 5,
+			createToken: Math.random().toString(36).slice(2, 10),
+		},
+
+		db: {
+			url: 'localhost',
+			port: 27017,
+			name: 'nanobridge'
+		},
+
+		site: {
+			name: 'nano[bridge]',
+			description: '단정하고 간결한 글나눔터',
+			landingText: '와 함께 소소한 일상을'
+		},
+
+		listing: {
+			postsPerPage: 10,
+			albumsPerPage: 30
+		},
+
+		acl: {
+			default: [
+				'authGenerate', 'userUpdate', 'subuserCreate',
+				'postRead', 'postWrite', 'postUpdate', 'postDelete'
+			],
+			guest: ['postRead'],
+			admin: [
+				'admin', 'siteEdit', 'userACL', 'authAnyone'
+			]
+		}
+	},
 
 	generate() {
-		this.store = {
-			secret: [...Array(5)]
-				.map(() => Math.random().toString(36).slice(2))
-				.join('')
-				.slice(0, Math.floor(Math.random() * 32) + 32),
-
-			user: {
-				maxSubUsers: 5,
-				createToken: Math.random().toString(36).slice(2, 10),
-			},
-
-			db: {
-				url: 'localhost',
-				port: 27017,
-				name: 'nanobridge'
-			},
-
-			site: {
-				name: 'Nano Bridge',
-				description: 'A microblogging application'
-			},
-
-			acl: {
-				default: [
-					'authGenerate', 'userUpdate', 'subuserCreate',
-					'postRead', 'postWrite', 'postUpdate', 'postDelete'
-				],
-				guest: ['postRead'],
-				admin: [
-					'admin', 'siteEdit', 'userACL', 'authAnyone'
-				]
-			}
-		};
-
+		this.store = deepmerge({}, this.default);
 		this.save();
 	},
 
@@ -46,7 +53,22 @@ module.exports = {
 		let confPath = configPath || this.path;
 		this.path = confPath;
 
-		this.store = JSON.parse(fs.readFileSync(confPath, 'utf8'));
+		try {
+			this.store = deepmerge(
+				this.default,
+				JSON.parse(fs.readFileSync(confPath, 'utf8'))
+			);
+		} catch(e) {
+			if(fs.existsSync(confPath)) {
+				console.error("Error while reading configuration file!");
+				throw new Error("Error while reading configuration file!");
+			}
+
+			console.log("Generated new configuration file.");
+			this.store = deepmerge({}, this.default);
+		}
+
+		this.save();
 	},
 
 	save() {
@@ -54,10 +76,6 @@ module.exports = {
 	},
 
 	init() {
-		if(!fs.existsSync('./config.json')) {
-			this.generate();
-		} else {
-			this.load();
-		}
+		this.load();
 	}
 };

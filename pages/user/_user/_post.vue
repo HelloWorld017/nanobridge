@@ -27,7 +27,8 @@
 					ref="listing"
 					v-bind="posts"
 					:context="`/user/${user.loginName}`"
-					:api-context="`/api/post/written-by/${user.loginName}`">
+					:api-context="`/api/post/written-by/${user.loginName}`"
+					:own-list="loginName === user.loginName">
 				</post-listing>
 			</div>
 		</div>
@@ -135,6 +136,10 @@
 
 				const bioObj = this.user.descriptions.find(v => v.key === 'bio');
 				return bioObj ? bioObj.value : null;
+			},
+
+			loginName() {
+				return this.$store.state.auth.loginName;
 			}
 		},
 

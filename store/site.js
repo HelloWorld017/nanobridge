@@ -3,14 +3,16 @@ export default {
 		return {
 			name: '',
 			description: '',
+			landingText: '',
 			registerEnabled: false
 		};
 	},
 
 	mutations: {
-		setSiteInfo(state, {name, description, registerEnabled}) {
+		setSiteInfo(state, {name, description, landingText, registerEnabled}) {
 			state.name = name;
 			state.description = description;
+			state.landingText = landingText;
 			state.registerEnabled = registerEnabled;
 		}
 	},

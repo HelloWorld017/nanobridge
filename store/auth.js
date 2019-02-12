@@ -10,7 +10,7 @@ export default {
 	},
 
 	mutations: {
-		setUser(state, {username, loginName, acl}) {
+		setUser(state, {username, loginName, acl, token}) {
 			state.username = username;
 			state.loginName = loginName;
 			state.acl = acl;

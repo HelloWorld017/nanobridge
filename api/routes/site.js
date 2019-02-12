@@ -5,18 +5,19 @@ const {Router} = require('express');
 const router = new Router();
 
 router.get('/', (req, res) => {
-	const {name, description} = config.store.site;
+	const {name, description, landingText} = config.store.site;
 
 	res.json({
 		ok: true,
 		name,
 		description,
+		landingText,
 		registerEnabled: !config.store.user.createToken
 	});
 });
 
 router.patch('/', requireACL('siteEdit'), (req, res) => {
-	const {name, description} = req.body;
+	const {name, description, landingText} = req.body;
 
 	if(typeof name === 'string') {
 		config.store.site.name = name;
@@ -24,6 +25,10 @@ router.patch('/', requireACL('siteEdit'), (req, res) => {
 
 	if(typeof description === 'string') {
 		config.store.site.description = description;
+	}
+
+	if(typeof landingText === 'string') {
+		config.store.site.landingText = landingText;
 	}
 
 	config.save();

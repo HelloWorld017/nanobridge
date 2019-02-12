@@ -4,8 +4,8 @@
 		<header class="Header" :class="{'Header-full': registerEnabled}">
 			<div class="Header__background"></div>
 			<div class="Landing">
-				<h1 class="Landing__title">nano[bridge]</h1>
-				<p class="Landing__description">와 함께 소소한 일상을</p>
+				<h1 class="Landing__title">{{siteName}}</h1>
+				<p class="Landing__description">{{landingText}}</p>
 
 				<div class="Landing__buttons" v-if="registerEnabled">
 					<button class="Landing__button">가입</button>
@@ -15,7 +15,7 @@
 		</header>
 
 		<div class="Documents">
-			<post-listing ref="listing" v-bind="posts"></post-listing>
+			<post-listing ref="listing" v-bind="posts" own-list></post-listing>
 		</div>
 	</main>
 </template>
@@ -108,6 +108,10 @@
 
 			siteDescription() {
 				return this.$store.state.site.description;
+			},
+
+			landingText() {
+				return this.$store.state.site.landingText;
 			},
 
 			registerEnabled() {

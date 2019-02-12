@@ -1,3 +1,4 @@
+const config = require('../config');
 const crypto = require('crypto');
 const {db} = require('../database');
 const fs = require('fs');
@@ -19,8 +20,6 @@ const upload = multer({
 	}
 });
 
-const POSTS_PER_PAGE = 2;
-
 router.use((req, res, next) => {
 	req.nanoPosts = {
 		getPage() {
@@ -36,7 +35,7 @@ router.use((req, res, next) => {
 			return page;
 		},
 
-		async getDocuments(query) {
+		async getDocuments(query, countNeeded = true) {
 			const isAlbum = req.query.album === '1';
 			const albumQuery = {
 				$and: [
@@ -45,31 +44,38 @@ router.use((req, res, next) => {
 				]
 			};
 			const targetQuery = isAlbum ? albumQuery : query;
+			const targetPerPage = config.store.listing[isAlbum ? 'albumsPerPage' : 'postsPerPage'];
 
 			const page = this.getPage();
 			const posts = await db().collection('posts')
 				.find(targetQuery)
-				.limit(POSTS_PER_PAGE)
+				.limit(targetPerPage)
 				.sort({createdAt: -1})
-				.skip((page - 1) * POSTS_PER_PAGE)
+				.skip((page - 1) * targetPerPage)
 				.toArray();
 
-			const postCounts = await db().collection('posts').countDocuments(targetQuery);
-			const albumCounts = await db().collection('posts').countDocuments(albumQuery);
+			const counts = {};
+			if(countNeeded) {
+				counts.post = await db().collection('posts').countDocuments(query);
+				counts.album = await db().collection('posts').countDocuments(albumQuery);
+				counts.target = isAlbum ? counts.album : counts.post;
+				counts.enabled = true;
+			}
 
-			const maxPages = Math.ceil(postCounts / POSTS_PER_PAGE);
+			if(counts.target === undefined) {
+				counts.target = await db().collection('posts').countDocuments(targetQuery);
+				counts.enabled = false;
+			}
+
+			const maxPages = Math.ceil(counts.target / targetPerPage);
 			return Object.assign({
 				ok: true,
 				pagination: {
 					current: page,
 					max: Math.max(1, maxPages),
-					perPage: POSTS_PER_PAGE
+					perPage: targetPerPage
 				},
-
-				counts: {
-					post: postCounts,
-					album: albumCounts
-				}
+				counts
 			}, await mapPostObject(posts));
 		}
 	};
@@ -83,7 +89,7 @@ router.get('/', requireACL('postRead'), async (req, res) => {
 			{replyTo: {$exists: false}},
 			{replyTo: null}
 		]
-	}));
+	}, false));
 });
 
 router.get('/:postId(\\d+)', requireACL('postRead'), async (req, res) => {
@@ -145,7 +151,7 @@ router.get('/written-by/:loginName/:postId/page', requireACL('postRead'), async 
 
 	res.json({
 		ok: true,
-		page: Math.floor(documentCounts / POSTS_PER_PAGE) + 1
+		page: Math.floor(documentCounts / config.store.listing.postsPerPage) + 1
 	});
 });
 

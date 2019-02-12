@@ -80,13 +80,13 @@
 		left: 0;
 		padding: 0 5vw;
 		box-sizing: border-box;
-		z-index: 1;
+		z-index: 9;
 
 		display: flex;
 		justify-content: space-between;
 		align-items: stretch;
 
-		background: #161616;
+		background: rgba(#161616, .95);
 		transition: all .4s ease;
 
 		font-family: 'Titillium Web', 'Noto Sans CJK KR', sans-serif;

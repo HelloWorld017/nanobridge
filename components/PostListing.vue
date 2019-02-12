@@ -1,18 +1,20 @@
 <template>
 	<div class="PostListing">
-		<template v-if="hasPerm">
+		<editor v-if="acl.includes('postWrite') && ownList">
+		</editor>
+		<template v-if="acl.includes('postRead')">
 			<div class="Container PostListing__header">
 				<div class="PostListing__chooser Chooser">
 					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 1}" @click="choose(1)">
 						글
-						<span class="Chooser__value">
+						<span class="Chooser__value" v-if="counts.enabled">
 							{{beautifyCount(counts.post)}}
 						</span>
 					</button>
 
 					<button class="Chooser__item" :class="{'Chooser__chosen': chosen === 2}" @click="choose(2)">
 						앨범
-						<span class="Chooser__value">
+						<span class="Chooser__value" v-if="counts.enabled">
 							{{beautifyCount(counts.album)}}
 						</span>
 					</button>
@@ -232,6 +234,11 @@
 			}
 		}
 
+		&__value {
+			margin-left: 10px;
+			font-size: .6rem;
+		}
+
 		&__highlight {
 			width: 50%;
 			height: 32px;
@@ -290,11 +297,13 @@
 </style>
 
 <script>
+	import Editor from "./Editor.vue";
 	import ListingSplit from "./ListingSplit.vue";
 	import PaginationTrigger from "./PaginationTrigger.vue";
 	import Post from "./Post.vue";
 	import PostAlbum from "./PostAlbum.vue";
 
+	import prefix from "../assets/js/prefix";
 	import scrollTo from "../assets/js/scrollTo";
 
 	export default {
@@ -338,12 +347,14 @@
 					max: 1,
 					perPage: 25
 				}
-			}
+			},
+
+			ownList: Boolean
 		},
 
 		computed: {
-			hasPerm() {
-				return this.$store.state.auth.acl.includes('postRead');
+			acl() {
+				return this.$store.state.auth.acl;
 			},
 
 			isAlbum() {
@@ -444,7 +455,7 @@
 			},
 
 			beautifyCount(i) {
-
+				return prefix(i);
 			}
 		},
 
@@ -462,6 +473,7 @@
 		},
 
 		components: {
+			Editor,
 			ListingSplit,
 			PaginationTrigger,
 			Post,

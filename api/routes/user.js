@@ -148,7 +148,10 @@ router.get('/:loginName/subuser', async (req, res) => {
 
 	res.json({
 		ok: true,
-		users: subusers.map(v => v.loginName)
+		users: [req.authedUser].concat(subusers).reduce((prev, curr) => {
+			prev[curr.loginName] = sanitizeUserObject(curr);
+			return prev;
+		}, {})
 	});
 });
 

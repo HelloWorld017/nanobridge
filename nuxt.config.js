@@ -51,6 +51,10 @@ module.exports = {
 		}
 	},
 
+	plugins: [
+		'~plugins/request.js'
+	],
+
 	serverMiddleware: [
 		'~/api/index.js'
 	],
