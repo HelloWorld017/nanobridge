@@ -169,7 +169,7 @@ router.use((req, res, next) => {
 
 router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req, res) => {
 	let {author, content, replyTo} = req.body;
-	if(typeof content !== 'string') {
+	if(typeof content !== 'string' || (content.length === 0 && req.files.length === 0)) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'

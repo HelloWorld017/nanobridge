@@ -52,11 +52,12 @@ module.exports = {
 	},
 
 	plugins: [
-		'~plugins/request.js'
+		'~plugins/request',
+		{src: '~plugins/editor', ssr: false}
 	],
 
 	serverMiddleware: [
-		'~/api/index.js'
+		'~/api/index'
 	],
 
 	modules: [
