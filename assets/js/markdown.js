@@ -107,14 +107,13 @@ Prism.languages.markdown = {
 	'url': {
 		// [example](http://example.com "Optional title")
 		// [example] [id]
-		pattern: /!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,
+		pattern: /\[[^\]]+\](?:\([^\s)]+\))/,
 		inside: {
 			'variable': {
-				pattern: /(!?\[)[^\]]+(?=\]$)/,
-				lookbehind: true
+				pattern: /\[[^\]]+\]/
 			},
-			'string': {
-				pattern: /"(?:\\.|[^"\\])*"(?=\)$)/
+			'urlstring': {
+				pattern: /(?:\([^\s)]+\))/
 			}
 		}
 	},

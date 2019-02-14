@@ -5,14 +5,14 @@ module.exports = {
 	store: {},
 	path: './config.json',
 	default: {
-		secret: [...Array(5)]
+		$secret: [...Array(5)]
 			.map(() => Math.random().toString(36).slice(2))
 			.join('')
 			.slice(0, Math.floor(Math.random() * 32) + 32),
 
 		user: {
 			maxSubUsers: 5,
-			createToken: Math.random().toString(36).slice(2, 10),
+			$createToken: Math.random().toString(36).slice(2, 10),
 		},
 
 		db: {
@@ -25,6 +25,10 @@ module.exports = {
 			name: 'nano[bridge]',
 			description: '단정하고 간결한 글나눔터',
 			landingText: '와 함께 소소한 일상을'
+		},
+
+		post: {
+			maxLength: 200
 		},
 
 		listing: {
@@ -56,7 +60,8 @@ module.exports = {
 		try {
 			this.store = deepmerge(
 				this.default,
-				JSON.parse(fs.readFileSync(confPath, 'utf8'))
+				JSON.parse(fs.readFileSync(confPath, 'utf8')),
+				{arrayMerge: (dest, source, opt) => source}
 			);
 		} catch(e) {
 			if(fs.existsSync(confPath)) {

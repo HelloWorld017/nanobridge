@@ -182,7 +182,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 		author = req.loginName;
 	}
 
-	const markedContent = markdown(content);
+	const markedContent = markdown(content.slice(0, config.post.maxLength));
 	const images = [];
 
 	const postIdGen = (Date.now() * 100).toString(16) + Math.floor(Math.random() * 100).toString(16);
@@ -270,7 +270,7 @@ router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImage
 	const postBasedirExists = await exists(postBasedir);
 
 	if(typeof content === 'string') {
-		const markedContent = markdown(content);
+		const markedContent = markdown(content.slice(0, config.post.maxLength));
 		setObject.content = markedContent;
 	}
 

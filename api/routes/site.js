@@ -1,19 +1,26 @@
 const config = require('../config');
-const {requireACL} = require('../utils');
+const deepmerge = require('deepmerge');
+const {requireACL, sanitizeConfigObject} = require('../utils');
 const {Router} = require('express');
 
 const router = new Router();
 
 router.get('/', (req, res) => {
-	const {name, description, landingText} = config.store.site;
+	const allowedKeys = ['site', 'post'];
+	const sanitizedConfig = {};
+	allowedKeys.forEach(key => sanitizedConfig[key] = sanitizeConfigObject(config.store[key]));
 
-	res.json({
-		ok: true,
-		name,
-		description,
-		landingText,
-		registerEnabled: !config.store.user.createToken
-	});
+	const computedConfig = {
+		site: {
+			registerEnabled: !config.store.user.$createToken.length
+		}
+	};
+
+	res.json(deepmerge.all([
+		{ok: true},
+		computedConfig,
+		sanitizedConfig
+	]));
 });
 
 router.patch('/', requireACL('siteEdit'), (req, res) => {

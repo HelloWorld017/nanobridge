@@ -37,7 +37,7 @@ app.use(async (req, res, next) => {
 	let acl = [];
 
 	try {
-		token = await promisify(jwt.verify)(authToken, config.store.secret);
+		token = await promisify(jwt.verify)(authToken, config.store.$secret);
 
 		const user = await db.collection('users').findOne({
 			loginName: token.loginName

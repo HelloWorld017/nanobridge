@@ -52,8 +52,7 @@ module.exports = {
 	},
 
 	plugins: [
-		'~plugins/request',
-		{src: '~plugins/editor', ssr: false}
+		'~plugins/request'
 	],
 
 	serverMiddleware: [

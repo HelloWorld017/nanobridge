@@ -66,6 +66,13 @@ const Utils = {
 		return result;
 	},
 
+	sanitizeConfigObject(object) {
+		return Object.keys(object).reduce((prev, curr) => {
+			if(!curr.startsWith('$')) prev[curr] = object[curr];
+			return prev;
+		}, {});
+	},
+
 	sanitizePostObject(post) {
 		return Utils.sanitizeObject([
 			'postId', 'content', 'images', 'author',

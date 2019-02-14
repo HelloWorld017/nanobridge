@@ -90,7 +90,7 @@ router.post('/', async (req, res) => {
 		username: user.username,
 		loginName,
 		lastUpdate: user.lastUpdate
-	}, config.store.secret, {
+	}, config.store.$secret, {
 		algorithm: 'HS256'
 	});
 

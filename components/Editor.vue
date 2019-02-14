@@ -6,9 +6,27 @@
 			</div>
 
 			<div class="Editor__area">
-				<div class="Editor__input" ref="editor" :style="{height: editorHeight}"></div>
+				<div class="Editor__input Schale" ref="schale" :style="{height: editorHeight}">
+					<textarea
+						class="Schale__textarea Schale__flatten"
+						ref="schaleTextarea"
+						v-model="content"
+						@input="content = $event.target.value"
+						spellcheck="false" autocapitalize="off"
+						autocorrect="off" autocomplete="off">
+					</textarea>
 
-				<div class="Editor__uploads" :class="{'Editor__uploads--enabled': uploadEnabled}"></div>
+					<div class="Schale__code Schale__flatten SchalePreview" v-html="code"></div>
+
+					<div class="Schale__counter" :class="{'Schale__counter--insufficient': leftLength < 50}">
+						{{leftLength}}
+					</div>
+				</div>
+
+				<div class="Editor__uploads" :class="{'Editor__uploads--enabled': uploadEnabled}">
+					<div class="Editor__file" v-for="image in uploadingImages">
+					</div>
+				</div>
 
 				<div class="Editor__tools">
 					<label class="Editor__upload mdi mdi-camera">
@@ -85,14 +103,14 @@
 
 		&__tools {
 			display: flex;
-			margin-left: auto;
-			margin-right: 10px;
-			margin-bottom: 10px;
+			align-items: center;
+			justify-content: flex-end;
+			margin: 5px 10px;
 
 			& > * {
 				color: #a0a0a0;
 				cursor: pointer;
-				font-size: 1.2rem;
+				font-size: 1.4rem;
 			}
 		}
 
@@ -108,12 +126,13 @@
 			box-sizing: border-box;
 			height: 0;
 			overflow: hidden;
-			padding: 10px;
+			padding: 0;
 
 			transition: all .4s ease;
 
 			&--enabled {
 				height: 100px;
+				padding: 10px;
 			}
 		}
 
@@ -154,78 +173,179 @@
 			border-radius: 50%;
 		}
 	}
-</style>
 
-<style lang="less">
-	.Editor {
-		.codeflask {
-			position: relative;
-			width: initial;
-			height: initial;
-			flex: 1;
-			background: transparent;
+	.Schale {
+		position: relative;
+		width: initial;
+		height: initial;
+		overflow: hidden;
+		flex: 1;
 
-			&__pre {
-				z-index: 0;
-			}
+		background: transparent;
+		box-sizing: border-box;
 
-			&__textarea {
-				caret-color: #808080;
-				color: transparent !important;
-				overflow: hidden;
-			}
+		* {
+			box-sizing: border-box;
+		}
 
-			&__code, &__textarea {
-				color: #f0f0f0;
-				font-family: 'Noto Sans CJK KR', sans-serif !important;
-			}
+		&__textarea {
+			background: none;
+			border: none;
+			caret-color: #808080;
+			color: transparent;
+			font-family: 'Noto Sans CJK KR', sans-serif !important;
+			overflow: hidden;
+			resize: none;
+			width: 100%;
+			height: 100%;
+			z-index: 2;
 
-			&__flatten {
-				white-space: pre-wrap;
+			&::selection {
+				background: #00bcd4;
+				color: #fff;
 			}
 		}
 
-		.language-markdown {
-			.mark {
-				background: #4dd0e1;
-				color: #202020;
+		&__code {
+			color: #f0f0f0;
+			display: block;
+			font-family: 'Noto Sans CJK KR', sans-serif !important;
+			pointer-events: none;
+			overflow: hidden;
+			overflow-wrap: break-word;
+			width: 100%;
+			z-index: 0;
+		}
+
+		&__flatten {
+			position: absolute;
+			top: 0;
+			left: 0;
+			overflow: hidden;
+			margin: 0 !important;
+			outline: none;
+			text-align: left;
+
+			padding: 20px;
+			font-size: 13px;
+			line-height: 1.25rem;
+			white-space: pre-wrap;
+		}
+
+		&__counter {
+			position: absolute;
+			bottom: 10px;
+			right: 10px;
+
+			color: #d0d0d0;
+			font-weight: 400;
+			font-family: 'Noto Sans CJK KR', sans-serif !important;
+			transition: all .4s ease;
+
+			&--insufficient {
+				color: #f06292;
 			}
+		}
+	}
+</style>
 
-			.code {
-				background: #303030;
-				color: #d0d0d0 !important;
+<style lang="less">
+	.FakeBold(@color) {
+		text-shadow: 0.7px 0 0 @color, 0.2px 0 0.2px @color, -0.2px 0 0.2px @color;
+	}
 
-				& > .punctuation {
-					color: #d0d0d0 !important;
+	.SchalePreview {
+		.mark {
+			background: #4dd0e1;
+			color: #202020;
+
+			.url {
+				.variable {
+					color: #4a148c;
+				}
+
+				.urlstring {
+					color: #6a1b9a;
 				}
 			}
 
-			.bold {
-				font-weight: 700;
-				font-size: .79rem;
+			.token.punctuation {
+				color: #00838f;
 			}
+		}
 
-			.ins {
+		.code {
+			background: #303030;
+			color: #d0d0d0 !important;
+
+			& > .punctuation {
+				color: #d0d0d0 !important;
+			}
+		}
+
+		.ins {
+			text-decoration: underline;
+		}
+
+		.strike {
+			text-decoration: line-through;
+			color: #606060;
+		}
+
+		.emoji {
+			background: #ffc107;
+			color: #303030;
+		}
+
+		.token.punctuation {
+			color: #606060;
+		}
+
+		.italic {
+			font-style: italic;
+		}
+
+		.url {
+			.variable {
+				color: #ec407a;
 				text-decoration: underline;
 			}
 
-			.strike {
-				text-decoration: line-through;
-				color: #606060;
+			.urlstring {
+				color: #f48fb1;
+			}
+		}
+
+		//Fake Bold (Becauseof position mismatch)
+		.bold {
+			.FakeBold(#f0f0f0);
+
+
+			.url {
+				.variable {.FakeBold(#ec407a);}
+				.urlstring {.FakeBold(#f48fb1);}
 			}
 
-			.emoji {
-				background: #ffc107;
-				color: #303030;
+			.mark {
+				.FakeBold(#202020);
+				.url {
+					.variable {.FakeBold(#4a148c);}
+					.urlstring {.FakeBold(#6a1b9a);}
+				}
+				.token.punctuation {.FakeBold(#00838f);}
 			}
 
-			.token.punctuation {
-				color: #606060;
-			}
+			.strike, .punctuation {.FakeBold(#606060);}
+			.code {.FakeBold(#d0d0d0);}
+			.emoji {.FakeBold(#303030);}
+		}
 
-			.italic {
-				font-style: italic;
-			}
+		.mark {
+			.bold {.FakeBold(#202020);}
+		}
+
+		.strike {
+			.bold {.FakeBold(#606060);}
 		}
 	}
 </style>
@@ -255,6 +375,18 @@
 
 			sendEnabled() {
 				return this.uploadEnabled || (this.content.length > 0);
+			},
+
+			code() {
+				return markdown.highlight(this.content, markdown.languages.markdown, 'markdown');
+			},
+
+			leftLength() {
+				return this.maxLength - this.content.length;
+			},
+
+			maxLength() {
+				return 200;
 			}
 		},
 
@@ -280,19 +412,21 @@
 
 			const {users} = await this.$request(`/api/user/${this.$store.state.auth.loginName}/subuser`);
 			this.users = users;
+		},
 
-			const flask = this.$flaskEditor(this.$refs.editor);
-			flask.onUpdate(code => {
-				this.content = code;
+		watch: {
+			content(newValue) {
+				if(newValue.length > this.maxLength) {
+					this.content = newValue.slice(0, 200);
+					return;
+				}
 
-				const textarea = flask.elTextarea;
+				const textarea = this.$refs.schaleTextarea;
 				this.editorHeight = 'auto';
 				this.$nextTick(() => {
 					this.editorHeight = `${textarea.scrollHeight + 12}px`
 				});
-			});
-
-			this.$flask = flask;
+			}
 		}
 	};
 </script>

@@ -43,7 +43,7 @@ router.get('/:userLoginName', async (req, res) => {
 router.post('/', async (req, res) => {
 	const {loginName, username, password, key} = req.body;
 
-	if(config.store.user.createToken.length > 0 && key !== config.store.user.createToken) {
+	if(config.store.user.$createToken && key !== config.store.user.$createToken) {
 		res.status(403).json({
 			ok: false,
 			reason: 'wrong-createtoken'
