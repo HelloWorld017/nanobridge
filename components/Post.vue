@@ -236,6 +236,7 @@
 	.Markdown {
 		mark {
 			background: #4dd0e1;
+			color: #202020;
 			padding: 0 3px;
 		}
 

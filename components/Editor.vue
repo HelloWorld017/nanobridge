@@ -165,6 +165,10 @@
 			flex: 1;
 			background: transparent;
 
+			&__pre {
+				z-index: 0;
+			}
+
 			&__textarea {
 				caret-color: #808080;
 				color: transparent !important;
@@ -184,6 +188,7 @@
 		.language-markdown {
 			.mark {
 				background: #4dd0e1;
+				color: #202020;
 			}
 
 			.code {
@@ -206,6 +211,7 @@
 
 			.strike {
 				text-decoration: line-through;
+				color: #606060;
 			}
 
 			.emoji {

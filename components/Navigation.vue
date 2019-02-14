@@ -128,7 +128,7 @@
 			position: relative;
 			padding: 0 30px;
 			display: flex;
-			align-items: center;
+			align-items: stretch;
 			transition: all .4s ease;
 
 			&--opened {
@@ -145,6 +145,9 @@
 			}
 
 			&__state {
+				display: flex;
+				align-items: center;
+
 				cursor: pointer;
 				color: #d0d0d0;
 				font-size: 1.3rem;

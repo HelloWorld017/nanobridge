@@ -1,7 +1,6 @@
 import Prism from "prismjs";
 
-Prism.languages.markdown = Prism.languages.extend('markup', {});
-Prism.languages.insertBefore('markdown', 'prolog', {
+Prism.languages.markdown = {
 	'blockquote': {
 		// > ...
 		pattern: /^>(?:[\t ]*>)*/m,
@@ -120,16 +119,19 @@ Prism.languages.insertBefore('markdown', 'prolog', {
 		}
 	},
 	'emoji': {
-		pattern: /:[^`\n]+:/
+		pattern: /(^|[^\\]):[A-Za-z0-9_]+?:/,
+		lookbehind: true
 	}
-});
+};
 
 const inlineStyles = ['bold', 'italic', 'strike', 'mark', 'ins'];
 const inlineExclusives = ['bold', 'italic', 'strike', 'mark', 'ins', 'url', 'emoji'];
 
 inlineStyles.forEach(inline => {
 	inlineExclusives.forEach(target => {
-		Prism.languages.markdown[inline].inside[target] = Prism.languages.markdown[target];
+		if(inline !== target) {
+			Prism.languages.markdown[inline].inside[target] = Prism.languages.markdown[target];
+		}
 	});
 });
 
