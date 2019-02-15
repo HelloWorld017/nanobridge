@@ -7,6 +7,8 @@ const {exists, hexToDec, getImageExtension, mapPostObject,
 const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
+
+const ImageProcess = require('../utils/imageprocess');
 const {Router} = require('express');
 
 const router = new Router();
@@ -193,16 +195,23 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 		await promisify(fs.mkdir)(postBasedir);
 	}
 
-	for(let [fileIndex, file] of req.files.entries()) {
-		const ext = getImageExtension(file.mimetype);
-		const imageFile = `${fileIndex + 1}.${ext}`;
-		await promisify(fs.rename)(file.path, path.resolve(postBasedir, imageFile));
+	const {processed} = await ImageProcess.all(req.files, {
+		resize: true,
+		maxSize: {
+			width: 10000,
+			height: 10000
+		}
+	}, index => {
+		const imageFile = `${index + 1}.png`;
+		return path.resolve(postBasedir, imageFile);
+	});
 
-		images.push({
-			id: fileIndex + 1,
-			file: imageFile
-		});
-	}
+	images.push(...processed.map((filepath, index) => {
+		return {
+			id: index + 1,
+			filepath
+		};
+	}));
 
 	const post = {
 		author,
@@ -299,18 +308,25 @@ router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImage
 		await promisify(fs.mkdir)(postBasedir);
 	}
 
-	for(let [fileIndex, file] of req.files.entries()) {
-		const ext = getImageExtension(file.mimetype);
-		const imageFile = `${fileIndex + 1}.${ext}`;
-		await promisify(fs.rename)(file.path, path.resolve(postBasedir, imageFile));
+	const {processed} = await ImageProcess.all(req.files, {
+		resize: true,
+		maxSize: {
+			width: 10000,
+			height: 10000
+		}
+	}, index => {
+		const imageFile = `${originalPost.lastImageId + index + 1}.png`;
+		return path.resolve(postBasedir, imageFile);
+	});
 
-		newImages.push({
-			id: fileIndex + 1 + originalPost.lastImageId,
-			file: imageFile
-		});
-	}
+	newImages.push(...processed.map((filepath, index) => {
+		return {
+			id: originalPost.lastImageId + index + 1,
+			filepath
+		};
+	}));
 
-	setObject.lastImageId = originalPost.lastImageId + req.files.length;
+	setObject.lastImageId = originalPost.lastImageId + processed.length;
 	setObject.images = newImages;
 
 	await db().collection('posts').findOneAndUpdate({postId}, {

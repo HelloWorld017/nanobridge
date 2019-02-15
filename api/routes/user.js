@@ -342,18 +342,21 @@ router.patch('/:loginName/profile', requireACL('userUpdate'), upload.single('pro
 		await promisify(fs.unlink)(originalProfile);
 	}
 
-	const extension = getImageExtension(req.file.mimetype);
-	const filename = `${req.authedUser.loginName} profile.${extension}`;
+	const filename = `${req.authedUser.loginName} profile.png`;
 
-	await promisify(fs.rename)(req.file.path, path.resolve(
-		__dirname, '..', '..', `./static/static_user/`, filename
-	));
+	const success = await ImageProcess.one(req.file, {
+		resize: true,
+		targetSize: {
+			width: 1024,
+			height: 1024
+		}
+	}, path.resolve(__dirname, '..', '..', `./static/static_user/`, filename));
 
 	await db().collection('users').findOneAndUpdate({
 		loginName: req.authedUser.loginName
 	}, {
 		$set: {
-			profile: `/static_user/${filename}`
+			profile: success ? `/static_user/${filename}` : '/defaults/profile.jpg'
 		}
 	});
 
@@ -377,18 +380,21 @@ router.patch('/:loginName/background', requireACL('userUpdate'), upload.single('
 		await promisify(fs.unlink)(originalBackground);
 	}
 
-	const extension = getImageExtension(req.file.mimetype);
-	const filename = `${req.authedUser.loginName} background.${extension}`;
+	const filename = `${req.authedUser.loginName} background.png`;
 
-	await promisify(fs.rename)(req.file.path, path.resolve(
-		__dirname, '..', '..', `./static/static_user/`, filename
-	));
+	const success = await ImageProcess.one(req.file, {
+		resize: true,
+		maxSize: {
+			width: 4096,
+			height: 4096
+		}
+	}, path.resolve(__dirname, '..', '..', `./static/static_user/`, filename));
 
 	await db().collection('users').findOneAndUpdate({
 		loginName: req.authedUser.loginName
 	}, {
 		$set: {
-			profile: `/static_user/${filename}`
+			profile: success ? `/static_user/${filename}` : '/defaults/background.jpg'
 		}
 	});
 

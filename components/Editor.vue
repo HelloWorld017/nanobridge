@@ -17,25 +17,44 @@
 					</textarea>
 
 					<div class="Schale__code Schale__flatten SchalePreview" v-html="code"></div>
+				</div>
 
-					<div class="Schale__counter" :class="{'Schale__counter--insufficient': leftLength < 50}">
+				<div class="Editor__tools">
+					<label class="Editor__tool Editor__upload mdi mdi-camera">
+						<input type="file" multiple>
+					</label>
+
+					<div class="Editor__tool Editor__emoji EmojiChooser mdi mdi-sticker-emoji">
+					</div>
+
+					<div class="Editor__counter" :class="{'Editor__counter--insufficient': leftLength < 50}">
 						{{leftLength}}
 					</div>
 				</div>
 
 				<div class="Editor__uploads" :class="{'Editor__uploads--enabled': uploadEnabled}">
-					<div class="Editor__file" v-for="image in uploadingImages">
-					</div>
+					<transition name="Fade">
+						<div class="Editor__empty" v-if="!uploadEnabled">
+							드래그 앤 드롭 · 붙여넣기 · 카메라 버튼 클릭
+						</div>
+
+						<div class="Editor__file" v-else v-for="image in uploadingImages">
+						</div>
+					</transition>
 				</div>
 
-				<div class="Editor__tools">
-					<label class="Editor__upload mdi mdi-camera">
-						<input type="file" multiple>
-					</label>
+				<transition name="Fade">
+					<div class="Editor__dropzone Dropzone"
+						:class="{'Dropzone--fail': dropzoneShake}"
+						v-if="dropzone"
+						@click="dropzone = false"
+						@drop="handleDrop($event)">
 
-					<div class="Editor__emoji EmojiChooser">
+						<span class="Dropzone__text">
+							{{dropzoneMessage}}
+						</span>
 					</div>
-				</div>
+				</transition>
 			</div>
 		</div>
 
@@ -58,7 +77,6 @@
 
 		&__area {
 			position: relative;
-			min-height: 10vh;
 			margin-left: 10px;
 
 			display: flex;
@@ -72,9 +90,8 @@
 
 		&__input {
 			position: relative;
-			min-height: 10vh;
+			min-height: 120px;
 			padding: 10px;
-			border-bottom: 1px solid #303030;
 
 			display: flex;
 			flex: 1;
@@ -105,13 +122,20 @@
 			display: flex;
 			align-items: center;
 			justify-content: flex-end;
-			margin: 5px 10px;
+
+			margin: 0 10px;
+			padding-bottom: 10px;
+			border-bottom: 1px solid #303030;
 
 			& > * {
-				color: #a0a0a0;
-				cursor: pointer;
-				font-size: 1.4rem;
+				margin: 0 5px;
 			}
+		}
+
+		&__tool {
+			color: #a0a0a0;
+			cursor: pointer;
+			font-size: 1.4rem;
 		}
 
 		&__file {
@@ -124,16 +148,11 @@
 			align-items: center;
 
 			box-sizing: border-box;
-			height: 0;
+			height: 120px;
 			overflow: hidden;
-			padding: 0;
+			padding: 10px;
 
 			transition: all .4s ease;
-
-			&--enabled {
-				height: 100px;
-				padding: 10px;
-			}
 		}
 
 		&__upload {
@@ -143,6 +162,21 @@
 			input {
 				display: none;
 			}
+		}
+
+		&__empty {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex: 1;
+			height: 100%;
+
+			color: #505050;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-weight: 400;
+			font-size: 1.3rem;
+
+			//border: 1px solid #00bcd4;
 		}
 
 		&__send {
@@ -162,6 +196,18 @@
 			&--enabled {
 				cursor: pointer;
 				background: #00bcd4;
+			}
+		}
+
+		&__counter {
+			color: #d0d0d0;
+			font-size: 1rem;
+			font-weight: 400;
+			font-family: 'Noto Sans CJK KR', sans-serif !important;
+			transition: all .4s ease;
+
+			&--insufficient {
+				color: #f06292;
 			}
 		}
 	}
@@ -231,20 +277,43 @@
 			line-height: 1.25rem;
 			white-space: pre-wrap;
 		}
+	}
 
-		&__counter {
-			position: absolute;
-			bottom: 10px;
-			right: 10px;
+	.Dropzone {
+		position: absolute;
+		top: -1px;
+		left: -1px;
+		width: ~"calc(100% + 2px)";
+		height: ~"calc(100% + 2px)";
+		box-sizing: border-box;
+		padding: 10px;
 
-			color: #d0d0d0;
-			font-weight: 400;
-			font-family: 'Noto Sans CJK KR', sans-serif !important;
-			transition: all .4s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 
-			&--insufficient {
-				color: #f06292;
+		background: #202020;
+		border: 1px solid #00acc1;
+		border-radius: 10px;
+		z-index: 3;
+
+		&--fail {
+			border-color: #f44336;
+
+			.Dropzone__text {
+				color: #f44336;
+				animation-name: Shake;
+				animation-duration: 100ms;
+				animation-timing-function: ease-in-out;
+				animation-iteration-count: 8;
 			}
+		}
+
+		&__text {
+			color: #d0d0d0;
+			font-size: 2.5rem;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-weight: 700;
 		}
 	}
 </style>
@@ -351,16 +420,21 @@
 </style>
 
 <script>
+	import imageProcess from "../assets/js/imageprocess";
 	import markdown from "../assets/js/markdown";
+	import setDelay from "../assets/js/setdelay";
 
 	export default {
 		data() {
 			return {
 				currentAuthorName: this.$store.state.auth.loginName,
-				content: '',
-				uploadingImages: [],
 				users: {},
-				editorHeight: 0
+				content: '',
+				editorHeight: 0,
+				uploadingImages: [],
+				dropzoneCounter: 0,
+				dropzoneShake: false,
+				dropzoneMessage: '여기 끌어다 놓으세요!'
 			};
 		},
 
@@ -387,16 +461,56 @@
 
 			maxLength() {
 				return 200;
+			},
+
+			dropzone: {
+				get() {
+					return this.dropzoneCounter > 0;
+				},
+				set(v) {
+					return this.dropzoneCounter = +v;
+				}
 			}
 		},
 
 		methods: {
-			handleUploadTransfer(dataTransfer) {
+			async handleDrop(event) {
+				try {
+					await this.handleUploadTransfer(event.dataTransfer);
+				} catch(e) {
+					this.dropzoneShake = true;
+					this.dropzoneMessage = '이미지 파일 말고는 주지 마세요!';
 
+					setDelay(() => this.dropzone = false, 500, 'dropzoneFade');
+					setDelay(() => this.dropzoneShake = false, 1000, 'dropzoneShake');
+					setTimeout(() => {
+						this.dropzoneMessage = '여기 끌어다 놓으세요!';
+					}, 1500);
+				}
+
+				event.stopPropagation();
+				event.preventDefault();
 			},
 
-			handleUpload(blobs) {
+			async handleUploadTransfer(dataTransfer) {
+				const blobs = [];
+				for(let item of dataTransfer.items) {
+					if(item.kind !== 'file') continue;
 
+					const blob = item.getAsFile();
+					blobs.push(blob);
+				}
+
+				await this.handleUpload(blobs);
+			},
+
+			async handleUpload(blobs) {
+				const processedImages = await imageProcess(blob);
+				this.uploadingImages.push(...processedImages);
+			},
+
+			deleteUpload(index) {
+				this.uploadingImages.splice(index, 1);
 			},
 
 			send() {
@@ -406,9 +520,29 @@
 
 		async mounted() {
 			document.addEventListener('paste', event => {
-				const dataTransfer = event.clipboardData || event.originalEvent.clipboardData;
+				const dataTransfer = event.clipboardData || window.clipboardData;
 				this.handleUploadTransfer(dataTransfer);
 			});
+
+			document.addEventListener('dragenter', event => {
+				this.dropzoneCounter++;
+			});
+
+			document.addEventListener('dragleave', event => {
+				this.dropzoneCounter--;
+			});
+
+			document.addEventListener('dragover', event => {
+				event.preventDefault();
+			});
+
+			document.addEventListener('drop', event => {
+				this.dropzoneShake = true;
+				setDelay(() => this.dropzone = false, 200, 'dropzoneFade');
+				setDelay(() => this.dropzoneShake = false, 1000, 'dropzoneShake');
+
+				event.preventDefault();
+			}, true);
 
 			const {users} = await this.$request(`/api/user/${this.$store.state.auth.loginName}/subuser`);
 			this.users = users;
