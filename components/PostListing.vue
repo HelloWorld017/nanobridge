@@ -1,7 +1,7 @@
 <template>
 	<div class="PostListing">
-		<editor v-if="acl.includes('postWrite') && ownList">
-		</editor>
+		<editor v-if="acl.includes('postWrite') && ownList"></editor>
+
 		<template v-if="acl.includes('postRead')">
 			<div class="Container PostListing__header">
 				<div class="PostListing__chooser Chooser">
@@ -78,6 +78,15 @@
 								@navigate="scrollTop">
 							</listing-split>
 						</template>
+					</div>
+				</transition>
+
+				<transition name="Fade">
+					<div v-if="postsAppend.length === 0 && acl.includes('postWrite') && ownList">
+						어서 첫번째 글을 작성해보세요!
+					</div>
+					<div v-else-if="postsAppend.length === 0">
+						아직 아무런 글도 없네요. 나중에 다시 확인해보세요!
 					</div>
 				</transition>
 

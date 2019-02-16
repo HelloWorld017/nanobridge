@@ -58,6 +58,11 @@ Prism.languages.markdown = {
 			'punctuation': /^\*\*|^__|\*\*$|__$/
 		}
 	},
+	'emoji': {
+		pattern: /(^|[^\\]):[A-Za-z0-9_]+?:/,
+		lookbehind: true,
+		greedy: true
+	},
 	'italic': {
 		// *em*
 		// _em_
@@ -116,10 +121,6 @@ Prism.languages.markdown = {
 				pattern: /(?:\([^\s)]+\))/
 			}
 		}
-	},
-	'emoji': {
-		pattern: /(^|[^\\]):[A-Za-z0-9_]+?:/,
-		lookbehind: true
 	}
 };
 

@@ -66,3 +66,14 @@ body {
 		opacity: 1;
 	}
 }
+
+.TranslateGroup {
+	&-enter, &-leave-to {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+
+	&-leave-active {
+		position: absolute !important;
+	}
+}

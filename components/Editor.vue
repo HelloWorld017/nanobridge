@@ -24,7 +24,23 @@
 						<input type="file" multiple>
 					</label>
 
-					<div class="Editor__tool Editor__emoji EmojiChooser mdi mdi-sticker-emoji">
+					<div class="Editor__tool Editor__emoji EmojiChooser" v-click-outside="closeEmojiDialog">
+						<a class="EmojiChooser__button" @click="emojiDialog = !emojiDialog">
+							<i class="mdi mdi-sticker-emoji"></i>
+						</a>
+
+						<no-ssr>
+							<transition name="Fade">
+								<picker class="EmojiChooser__chooser"
+									emoji="smile"
+									title="이모지를 선택하세요"
+									native
+									:i18n="emojiI18n"
+									v-if="emojiDialog"
+									@select="addEmoji">
+								</picker>
+							</transition>
+						</no-ssr>
 					</div>
 
 					<div class="Editor__counter" :class="{'Editor__counter--insufficient': leftLength < 50}">
@@ -33,13 +49,19 @@
 				</div>
 
 				<div class="Editor__uploads" :class="{'Editor__uploads--enabled': uploadEnabled}">
-					<transition name="Fade">
+					<transition name="Fade" mode="out-in">
 						<div class="Editor__empty" v-if="!uploadEnabled">
 							드래그 앤 드롭 · 붙여넣기 · 카메라 버튼 클릭
 						</div>
 
-						<div class="Editor__file" v-else v-for="image in uploadingImages">
-						</div>
+						<transition-group name="TranslateGroup" tag="div" class="Editor__files" v-else>
+							<div class="Editor__file" v-for="image in uploadingImages" :key="image.key">
+								<img :src="image.url">
+								<a class="Editor__file__delete" @click="deleteUpload(image.key)">
+									<i class="mdi mdi-close-circle-outline"></i>
+								</a>
+							</div>
+						</transition-group>
 					</transition>
 				</div>
 
@@ -48,7 +70,7 @@
 						:class="{'Dropzone--fail': dropzoneShake}"
 						v-if="dropzone"
 						@click="dropzone = false"
-						@drop="handleDrop($event)">
+						@drop.stop.prevent="handleDrop($event)">
 
 						<span class="Dropzone__text">
 							{{dropzoneMessage}}
@@ -139,8 +161,54 @@
 		}
 
 		&__file {
+			display: inline-block;
 			width: 75px;
 			height: 75px;
+			margin: 5px;
+			position: relative;
+			overflow: hidden;
+			transition: transform .4s ease, opacity .4s ease;
+
+			img {
+				width: 83px;
+				height: 83px;
+				object-fit: cover;
+
+				margin-top: -4px;
+				margin-left: -4px;
+				filter: blur(0);
+				transition: filter .4s ease;
+			}
+
+			&__delete {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+
+				display: flex;
+				align-items: center;
+				justify-content: center;
+
+				color: #d0d0d0;
+				font-size: 2rem;
+
+				cursor: pointer;
+				background: rgba(0, 0, 0, .6);
+				opacity: 0;
+				transition: all .4s ease;
+			}
+
+			&:hover {
+				img {
+					filter: blur(4px);
+				}
+
+				.Editor__file__delete {
+					opacity: 1;
+				}
+			}
 		}
 
 		&__uploads {
@@ -148,7 +216,7 @@
 			align-items: center;
 
 			box-sizing: border-box;
-			height: 120px;
+			min-height: 120px;
 			overflow: hidden;
 			padding: 10px;
 
@@ -217,6 +285,12 @@
 			width: 50px;
 			height: 50px;
 			border-radius: 50%;
+		}
+	}
+
+	.EmojiChooser {
+		&__chooser {
+			position: absolute;
 		}
 	}
 
@@ -291,6 +365,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		text-align: center;
 
 		background: #202020;
 		border: 1px solid #00acc1;
@@ -417,9 +492,21 @@
 			.bold {.FakeBold(#606060);}
 		}
 	}
+
+	.emoji-mart-preview-emoji .emoji-mart-emoji span {
+		display: flex !important;
+		justify-content: center;
+		align-items: center;
+
+		font-size: 30px !important;
+		margin-right: 5px;
+	}
 </style>
 
 <script>
+	import ClickOutside from 'vue-click-outside';
+	import {Picker} from 'emoji-mart-vue';
+
 	import imageProcess from "../assets/js/imageprocess";
 	import markdown from "../assets/js/markdown";
 	import setDelay from "../assets/js/setdelay";
@@ -429,12 +516,33 @@
 			return {
 				currentAuthorName: this.$store.state.auth.loginName,
 				users: {},
+
 				content: '',
 				editorHeight: 0,
+
 				uploadingImages: [],
 				dropzoneCounter: 0,
 				dropzoneShake: false,
-				dropzoneMessage: '여기 끌어다 놓으세요!'
+				dropzoneMessage: '여기 끌어다 놓으세요!',
+
+				emojiI18n: {
+					search: '검색',
+					notfound: '이모지가 없네요 :(',
+					categories: {
+						search: '검색 결과',
+						recent: '주로 사용',
+						people: '얼굴 & 사람',
+						nature: '동물 & 자연',
+						foods: '음식 & 음료',
+						activity: '활동',
+						places: '여행 & 장소',
+						objects: '사물',
+						symbols: '기호',
+						flags: '국기',
+						custom: '커스텀'
+					}
+				},
+				emojiDialog: false
 			};
 		},
 
@@ -476,10 +584,43 @@
 		methods: {
 			async handleDrop(event) {
 				try {
-					await this.handleUploadTransfer(event.dataTransfer);
+					const {all, failed, exceed} = await this.handleUploadTransfer(event.dataTransfer);
+
+					if(exceed > 0) {
+						const error = new Error();
+						error.exceedCount = exceed;
+						error.isExceed = true;
+
+						throw error;
+					}
+
+					if(failed > 0) {
+						const error = new Error();
+						error.failedCount = failed;
+						error.all = all;
+						error.isNotImage = true;
+
+						throw error;
+					}
+
+					this.dropzone = false;
 				} catch(e) {
+					let message = '처리 과정에서 문제가 있었어요 T_T';
+
+					if(e.isNotImage) {
+						if(e.all === 1) {
+							message = '저에게는 이미지만 넣어 주세요!';
+						} else {
+							message = `${e.failedCount}개는 이미지가 아니에요!`;
+						}
+					} else if(e.isExceed) {
+						message = '이미지가 너무 많아요!';
+					} else {
+						console.error(e);
+					}
+
 					this.dropzoneShake = true;
-					this.dropzoneMessage = '이미지 파일 말고는 주지 마세요!';
+					this.dropzoneMessage = message;
 
 					setDelay(() => this.dropzone = false, 500, 'dropzoneFade');
 					setDelay(() => this.dropzoneShake = false, 1000, 'dropzoneShake');
@@ -487,9 +628,6 @@
 						this.dropzoneMessage = '여기 끌어다 놓으세요!';
 					}, 1500);
 				}
-
-				event.stopPropagation();
-				event.preventDefault();
 			},
 
 			async handleUploadTransfer(dataTransfer) {
@@ -501,26 +639,53 @@
 					blobs.push(blob);
 				}
 
-				await this.handleUpload(blobs);
+				const {failed, exceed} = await this.handleUpload(blobs);
+				return {
+					failed,
+					exceed,
+					all: blobs.length
+				};
 			},
 
 			async handleUpload(blobs) {
-				const processedImages = await imageProcess(blob);
-				this.uploadingImages.push(...processedImages);
+				let exceed = 0;
+				const maxImages = 32;
+				const processedImages = await imageProcess(blobs);
+				this.uploadingImages.push(...processedImages.results);
+
+				const totalImages = this.uploadingImages.length;
+				if(totalImages > maxImages) {
+					this.uploadingImages = this.uploadingImages.slice(0, maxImages);
+					exceed = totalImages - maxImages;
+				}
+
+				return {
+					failed: processedImages.failed,
+					exceed
+				};
 			},
 
-			deleteUpload(index) {
-				this.uploadingImages.splice(index, 1);
+			deleteUpload(key) {
+				this.uploadingImages = this.uploadingImages.filter(v => v.key !== key);
 			},
 
 			send() {
 
+			},
+
+			addEmoji(emoji) {
+				this.content += emoji.native;
+			},
+
+			closeEmojiDialog() {
+				this.emojiDialog = false;
 			}
 		},
 
 		async mounted() {
 			document.addEventListener('paste', event => {
 				const dataTransfer = event.clipboardData || window.clipboardData;
+				window.finalTransfer = dataTransfer;
 				this.handleUploadTransfer(dataTransfer);
 			});
 
@@ -542,7 +707,7 @@
 				setDelay(() => this.dropzoneShake = false, 1000, 'dropzoneShake');
 
 				event.preventDefault();
-			}, true);
+			});
 
 			const {users} = await this.$request(`/api/user/${this.$store.state.auth.loginName}/subuser`);
 			this.users = users;
@@ -561,6 +726,14 @@
 					this.editorHeight = `${textarea.scrollHeight + 12}px`
 				});
 			}
+		},
+
+		components: {
+			Picker
+		},
+
+		directives: {
+			ClickOutside
 		}
 	};
 </script>
