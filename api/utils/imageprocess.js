@@ -64,12 +64,12 @@ const ImageProcess = {
 		return newImage;
 	},
 
-	async processImageAll(files, options, renameFn) {
+	async all(files, options, renameFn) {
 		const processedImages = [];
 		const failedImages = [];
 		let index = 0;
 
-		for(let [file, fileIndex] of files.entries()) {
+		for(let [fileIndex, file] of files.entries()) {
 			try {
 				const image = await ImageProcess.processImage(file, options);
 				const fileName = renameFn(index);
@@ -90,7 +90,7 @@ const ImageProcess = {
 		};
 	},
 
-	async processImageOne(file, options, target) {
+	async one(file, options, target) {
 		let result = true;
 
 		try {

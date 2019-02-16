@@ -82,11 +82,13 @@
 				</transition>
 
 				<transition name="Fade">
-					<div v-if="postsAppend.length === 0 && acl.includes('postWrite') && ownList">
-						어서 첫번째 글을 작성해보세요!
-					</div>
-					<div v-else-if="postsAppend.length === 0">
-						아직 아무런 글도 없네요. 나중에 다시 확인해보세요!
+					<div class="PostListing__empty" v-if="postsAppend.length === 0">
+						<span v-if="acl.includes('postWrite') && ownList">
+							어서 첫번째 글을 작성해보세요!
+						</span>
+						<span v-else>
+							아직 아무런 글도 없네요. 나중에 다시 확인해보세요!
+						</span>
 					</div>
 				</transition>
 
@@ -204,6 +206,16 @@
 				content: "";
 				flex: auto;
 			}
+		}
+
+		&__empty {
+			color: #606060;
+			text-align: center;
+			font-size: 4rem;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-weight: 100;
+
+			margin-top: 100px;
 		}
 	}
 

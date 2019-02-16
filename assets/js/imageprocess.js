@@ -15,7 +15,7 @@ class ProcessedImage {
 	}
 
 	revoke() {
-		URL.revokeObjectURL(this._url);
+		if(this._url) URL.revokeObjectURL(this._url);
 	}
 }
 

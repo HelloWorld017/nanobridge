@@ -21,7 +21,7 @@
 
 				<div class="Editor__tools">
 					<label class="Editor__tool Editor__upload mdi mdi-camera">
-						<input type="file" multiple>
+						<input type="file" accept="image/*" ref="fileinput" multiple @change="handleUploadDialog">
 					</label>
 
 					<div class="Editor__tool Editor__emoji EmojiChooser" v-click-outside="closeEmojiDialog">
@@ -581,7 +581,22 @@
 			}
 		},
 
+		props: {
+			replyTo: {
+				type: String,
+				default: ''
+			}
+		},
+
 		methods: {
+			async handleUploadDialog(event) {
+				const files = this.$refs.fileinput.files;
+				if(!files) return;
+
+				this.handleUpload(files);
+				this.$refs.fileinput.files = [];
+			},
+
 			async handleDrop(event) {
 				try {
 					const {all, failed, exceed} = await this.handleUploadTransfer(event.dataTransfer);
@@ -669,8 +684,29 @@
 				this.uploadingImages = this.uploadingImages.filter(v => v.key !== key);
 			},
 
-			send() {
+			async send() {
+				const formData = new FormData();
+				formData.append('author', this.currentAuthorName);
+				formData.append('content', this.content);
 
+				if(this.replyTo) {
+					formData.append('replyTo', this.replyTo);
+				}
+
+				if(this.uploadEnabled) {
+					this.uploadingImages.forEach(image => {
+						formData.append('images', image.blob);
+					});
+				}
+
+				await this.$request('/api/post', 'post', formData);
+
+				this.uploadingImages.forEach(image => {
+					image.revoke();
+				});
+
+				this.content = '';
+				this.uploadingImages = [];
 			},
 
 			addEmoji(emoji) {

@@ -184,7 +184,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 		author = req.loginName;
 	}
 
-	const markedContent = markdown(content.slice(0, config.post.maxLength));
+	const markedContent = markdown(content.slice(0, config.store.post.maxLength));
 	const images = [];
 
 	const postIdGen = (Date.now() * 100).toString(16) + Math.floor(Math.random() * 100).toString(16);
