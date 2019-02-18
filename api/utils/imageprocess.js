@@ -72,10 +72,10 @@ const ImageProcess = {
 		for(let [fileIndex, file] of files.entries()) {
 			try {
 				const image = await ImageProcess.processImage(file, options);
-				const fileName = renameFn(index);
-				await image.writeAsync(fileName);
+				const {imageFile, fullPath} = renameFn(index);
+				await image.writeAsync(fullPath);
 
-				processedImages.push(fileName);
+				processedImages.push({imageFile, fullPath});
 				index++;
 			} catch(e) {
 				failedImages.push(fileIndex);

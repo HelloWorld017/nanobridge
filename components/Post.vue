@@ -55,9 +55,11 @@
 		margin: 30px;
 		margin-bottom: 48px;
 		width: 100%;
+		max-height: 400px;
 
 		color: #d0d0d0;
 		font-family: 'Noto Sans CJK KR', sans-serif;
+		overflow: auto;
 
 		&__profile {
 			width: 64px;

@@ -203,13 +203,16 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 		}
 	}, index => {
 		const imageFile = `${index + 1}.png`;
-		return path.resolve(postBasedir, imageFile);
+		return {
+			imageFile,
+			fullPath: path.resolve(postBasedir, imageFile)
+		};
 	});
 
-	images.push(...processed.map((filepath, index) => {
+	images.push(...processed.map(({imageFile}, index) => {
 		return {
 			id: index + 1,
-			filepath
+			file: imageFile
 		};
 	}));
 
@@ -245,6 +248,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 
 	await db().collection('posts').insertOne(post);
 
+	//TODO apply rate limit / captcha & disable useless long posts
 	res.json({
 		ok: true,
 		post: sanitizePostObject(post)

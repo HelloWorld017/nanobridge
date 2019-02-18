@@ -41,7 +41,7 @@ router.get('/:userLoginName', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-	const {loginName, username, password, key} = req.body;
+	const {loginName, email, username, password, key} = req.body;
 
 	if(config.store.user.$createToken && key !== config.store.user.$createToken) {
 		res.status(403).json({
@@ -74,6 +74,22 @@ router.post('/', async (req, res) => {
 			reason: 'user-already-exists'
 		});
 		return;
+	}
+
+	if(config.store.user.emailAuth) {
+		if(typeof email !== 'string') {
+			res.status(400).json({
+				ok: false,
+				reason: 'wrong-arguments'
+			});
+			return;
+		}
+
+		const emailAuthToken = crypto.createHash('sha256').update(
+			Math.random().toString(36).slice(2)
+		).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
+
+		// TODO send email, separate authed ACL & non-authed ACL
 	}
 
 	const userLength = await db().collection('users').countDocuments({});
@@ -427,5 +443,7 @@ router.patch('/:loginName/acl', requireACL('userACL'), async (req, res) => {
 		ok: true
 	});
 });
+
+router.patch('/:loginName/email/send', )
 
 module.exports = router;
