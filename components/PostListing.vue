@@ -1,6 +1,6 @@
 <template>
 	<div class="PostListing">
-		<editor v-if="acl.includes('postWrite') && ownList"></editor>
+		<editor v-if="acl.includes('postWrite') && ownList" @send="choose(1)"></editor>
 
 		<template v-if="acl.includes('postRead')">
 			<div class="Container PostListing__header">
@@ -436,6 +436,8 @@
 
 				if(this.isAlbum) {
 					await this.loadNext(1);
+					this.$emit('pagination', this.updatedPagination);
+					//TODO fix bug when choosing album on 2 or higher page
 				}
 
 				this.$nextTick(() => {
@@ -484,8 +486,7 @@
 			'$route.query.page'() {
 				if(this.scrollWhenPageChange) {
 					this.$nextTick(() => {
-						const top = window.innerHeight * 0.6;
-						scrollTo(top);
+						scrollTo(window.innerHeight * 0.6);
 					});
 
 					this.scrollWhenPageChange = false;

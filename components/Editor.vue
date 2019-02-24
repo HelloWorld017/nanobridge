@@ -707,6 +707,8 @@
 
 				this.content = '';
 				this.uploadingImages = [];
+
+				this.$emit('send');
 			},
 
 			addEmoji(emoji) {
