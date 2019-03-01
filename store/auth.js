@@ -34,6 +34,7 @@ export default {
 				switch (resp.reason) {
 					case 'wrong-id-or-password': readableReason = '잘못된 ID 또는 비밀번호'; break;
 					case 'no-permission': readableReason = '로그인 할 권한이 없음'; break;
+					case 'please-auth-email': readableReason = '이메일을 확인해주세요!'; break;
 					default: readableReason = resp.reason;
 				}
 				throw new Error(readableReason);

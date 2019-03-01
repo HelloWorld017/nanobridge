@@ -40,7 +40,7 @@ router.get('/:userLoginName', async (req, res) => {
 	});
 });
 
-router.post('/', async (req, res) => {
+router.post('/', async (req, res) => { //TODO ratelimit (1 req / 3 min)
 	const {loginName, email, username, password, key} = req.body;
 
 	if(config.store.user.$createToken && key !== config.store.user.$createToken) {
@@ -51,7 +51,9 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(typeof loginName !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
+	if(typeof loginName !== 'string' || typeof username !== 'string' ||
+		typeof password !== 'string' || typeof email !== 'string') {
+
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -59,7 +61,7 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(!/[a-zA-Z0-9-_.]{5,32}/.test(loginName) || username.length > 32) {
+	if(!/[a-zA-Z0-9-_.]{5,32}/.test(loginName) || username.length > 32 || !email.includes('@')) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -67,7 +69,16 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	const existing = await db().collection('users').findOne({loginName});
+	const existingQuery = {
+		$or: [
+			{loginName},
+			{email}
+		]
+	};
+
+	const existing = await db().collection('users').findOne(existingQuery);
+	const phaseExisting = await db().collection('registrationPhase').findOne(existingQuery);
+
 	if(existing) {
 		res.status(403).json({
 			ok: false,
@@ -76,21 +87,13 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(config.store.user.emailAuth) {
-		if(typeof email !== 'string') {
-			res.status(400).json({
-				ok: false,
-				reason: 'wrong-arguments'
-			});
-			return;
-		}
-
-		const emailAuthToken = crypto.createHash('sha256').update(
-			Math.random().toString(36).slice(2)
-		).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
-
-		// TODO send email, separate authed ACL & non-authed ACL
+	if(phaseExisting) {
+		await db().collection('registrationPhase').remove(existingQuery);
 	}
+
+	const emailAuthToken = crypto.createHash('sha256').update(
+		Math.random().toString(36).slice(2)
+	).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
 
 	const userLength = await db().collection('users').countDocuments({});
 	const isAdmin = userLength === 0;
@@ -111,9 +114,13 @@ router.post('/', async (req, res) => {
 
 	const passwordFinal = `${salt.toString('hex')}$${passwordHashed.toString('hex')}`;
 
-	await db().collection('users').insertOne({
+	// TODO send email
+
+	await db().collection('registrationPhase').insertOne({
 		loginName,
 		username,
+		email,
+		emailAuthToken,
 		password: passwordFinal,
 		descriptions: [],
 		profile: '/defaults/profile.jpg',

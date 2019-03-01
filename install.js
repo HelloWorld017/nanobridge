@@ -17,6 +17,7 @@ const checkAndGenerate = async dir => {
 	const {db} = database;
 	await db.createCollection('posts');
 	await db.createCollection('users');
+	await db.createCollection('registrationPhase');
 	await db.collection('posts').createIndex({createdAt: -1});
 
 	await checkAndGenerate('./static/uploads');

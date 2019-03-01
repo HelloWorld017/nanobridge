@@ -12,7 +12,7 @@ module.exports = {
 
 		user: {
 			maxSubUsers: 5,
-			$createToken: Math.random().toString(36).slice(2, 10),
+			$createToken: Math.random().toString(36).slice(2, 10)
 		},
 
 		db: {
@@ -24,7 +24,8 @@ module.exports = {
 		site: {
 			name: 'nano[bridge]',
 			description: '단정하고 간결한 글나눔터',
-			landingText: '와 함께 소소한 일상을'
+			landingText: '와 함께 소소한 일상을',
+			url: 'localhost'
 		},
 
 		post: {

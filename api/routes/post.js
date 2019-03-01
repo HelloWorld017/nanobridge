@@ -170,6 +170,8 @@ router.use((req, res, next) => {
 });
 
 router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req, res) => {
+	//TODO ratelimit (10 reqs / 1 min)
+
 	let {author, content, replyTo} = req.body;
 	if(typeof content !== 'string' || (content.length === 0 && req.files.length === 0)) {
 		res.status(400).json({
@@ -256,6 +258,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 });
 
 router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImages', 32), async (req, res) => {
+	//TODO ratelimit (10 reqs / 1 min)
 	const {postId} = req.params;
 	const {content, deleteImages} = req.body;
 	const setObject = {};
