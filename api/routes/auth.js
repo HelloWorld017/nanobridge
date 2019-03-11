@@ -47,11 +47,12 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	const user = await db().collection('users').findOne({
-		loginName
-	});
+	const query = loginName.includes('@') ? {email: loginName} : {loginName};
+	const user = await db().collection('users').findOne(query);
+	const phaseUser = await db().collection('registrationPhase').findOne(query);
+	const authingUser = user || phaseUser;
 
-	if(!user || user.subUserOf) {
+	if(!authingUser || user.subUserOf) {
 		res.status(403).json({
 			ok: false,
 			reason: 'wrong-id-or-password'
@@ -59,7 +60,7 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(!user.acl.includes('authGenerate')) {
+	if(user && !user.acl.includes('authGenerate')) {
 		res.status(403).json({
 			ok: false,
 			reason: 'no-permission'
@@ -68,7 +69,7 @@ router.post('/', async (req, res) => {
 	}
 
 	const passwordNormalized = Buffer.from(password.normalize('NFKC'), 'utf8');
-	const [salt, targetPassword] = user.password.split('$');
+	const [salt, targetPassword] = authingUser.password.split('$');
 	const passwordHashed = await new Promise((resolve, reject) => {
 		scrypt(passwordNormalized, Buffer.from(salt, 'hex'), 1024, 8, 1, 32, (err, progress, key) => {
 			if(err) return reject(err);
@@ -86,11 +87,19 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
+	if(phaseUser) {
+		res.json({
+			ok: false,
+			reason: 'please-auth-email'
+		});
+		return;
+	}
+
 	const token = await promisify(jwt.sign)({
 		username: user.username,
-		loginName,
+		loginName: user.loginName,
 		lastUpdate: user.lastUpdate
-	}, config.store.secret, {
+	}, config.store.$secret, {
 		algorithm: 'HS256'
 	});
 
@@ -100,6 +109,35 @@ router.post('/', async (req, res) => {
 		username: user.username,
 		acl: user.acl
 	});
+});
+
+router.get('/email/:emailAuthToken', async (req, res) => {
+	const {emailAuthToken} = req.params;
+	const user = await db().collection('registrationPhase').findOne({emailAuthToken});
+
+	if(!user) {
+		res.json({
+			ok: false,
+			reason: 'wrong-token'
+		});
+		return;
+	}
+
+	await db().collection('registrationPhase').remove({emailAuthToken});
+	await db().collection('users').insertOne(user);
+
+	res.json({
+		ok: true
+	});
+});
+
+router.get('/template', (req, res) => {
+	res.type('html').send(
+		new EmailAuthTemplate({
+			token: '6f8adb01728ff',
+			username: 'Khinenw'
+		});
+	);
 });
 
 module.exports = router;

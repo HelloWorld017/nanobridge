@@ -40,10 +40,10 @@ router.get('/:userLoginName', async (req, res) => {
 	});
 });
 
-router.post('/', async (req, res) => {
-	const {loginName, username, password, key} = req.body;
+router.post('/', async (req, res) => { //TODO ratelimit (1 req / 3 min)
+	const {loginName, email, username, password, key} = req.body;
 
-	if(config.store.user.createToken.length > 0 && key !== config.store.user.createToken) {
+	if(config.store.user.$createToken && key !== config.store.user.$createToken) {
 		res.status(403).json({
 			ok: false,
 			reason: 'wrong-createtoken'
@@ -51,7 +51,9 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(typeof loginName !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
+	if(typeof loginName !== 'string' || typeof username !== 'string' ||
+		typeof password !== 'string' || typeof email !== 'string') {
+
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -59,7 +61,7 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(!/^[a-zA-Z0-9-_.]{5,32}$/.test(loginName) || username.length > 32) {
+	if(!/[a-zA-Z0-9-_.]{5,32}/.test(loginName) || username.length > 32 || !email.includes('@')) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -67,7 +69,16 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	const existing = await db().collection('users').findOne({loginName});
+	const existingQuery = {
+		$or: [
+			{loginName},
+			{email}
+		]
+	};
+
+	const existing = await db().collection('users').findOne(existingQuery);
+	const phaseExisting = await db().collection('registrationPhase').findOne(existingQuery);
+
 	if(existing) {
 		res.status(403).json({
 			ok: false,
@@ -75,6 +86,14 @@ router.post('/', async (req, res) => {
 		});
 		return;
 	}
+
+	if(phaseExisting) {
+		await db().collection('registrationPhase').remove(existingQuery);
+	}
+
+	const emailAuthToken = crypto.createHash('sha256').update(
+		Math.random().toString(36).slice(2)
+	).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
 
 	const userLength = await db().collection('users').countDocuments({});
 	const isAdmin = userLength === 0;
@@ -95,9 +114,13 @@ router.post('/', async (req, res) => {
 
 	const passwordFinal = `${salt.toString('hex')}$${passwordHashed.toString('hex')}`;
 
-	await db().collection('users').insertOne({
+	// TODO send email
+
+	await db().collection('registrationPhase').insertOne({
 		loginName,
 		username,
+		email,
+		emailAuthToken,
 		password: passwordFinal,
 		descriptions: [],
 		profile: '/defaults/profile.jpg',
@@ -342,18 +365,21 @@ router.patch('/:loginName/profile', requireACL('userUpdate'), upload.single('pro
 		await promisify(fs.unlink)(originalProfile);
 	}
 
-	const extension = getImageExtension(req.file.mimetype);
-	const filename = `${req.authedUser.loginName} profile.${extension}`;
+	const filename = `${req.authedUser.loginName} profile.png`;
 
-	await promisify(fs.rename)(req.file.path, path.resolve(
-		__dirname, '..', '..', `./static/static_user/`, filename
-	));
+	const success = await ImageProcess.one(req.file, {
+		resize: true,
+		targetSize: {
+			width: 1024,
+			height: 1024
+		}
+	}, path.resolve(__dirname, '..', '..', `./static/static_user/`, filename));
 
 	await db().collection('users').findOneAndUpdate({
 		loginName: req.authedUser.loginName
 	}, {
 		$set: {
-			profile: `/static_user/${filename}`
+			profile: success ? `/static_user/${filename}` : '/defaults/profile.jpg'
 		}
 	});
 
@@ -377,18 +403,21 @@ router.patch('/:loginName/background', requireACL('userUpdate'), upload.single('
 		await promisify(fs.unlink)(originalBackground);
 	}
 
-	const extension = getImageExtension(req.file.mimetype);
-	const filename = `${req.authedUser.loginName} background.${extension}`;
+	const filename = `${req.authedUser.loginName} background.png`;
 
-	await promisify(fs.rename)(req.file.path, path.resolve(
-		__dirname, '..', '..', `./static/static_user/`, filename
-	));
+	const success = await ImageProcess.one(req.file, {
+		resize: true,
+		maxSize: {
+			width: 4096,
+			height: 4096
+		}
+	}, path.resolve(__dirname, '..', '..', `./static/static_user/`, filename));
 
 	await db().collection('users').findOneAndUpdate({
 		loginName: req.authedUser.loginName
 	}, {
 		$set: {
-			profile: `/static_user/${filename}`
+			profile: success ? `/static_user/${filename}` : '/defaults/background.jpg'
 		}
 	});
 
@@ -421,5 +450,7 @@ router.patch('/:loginName/acl', requireACL('userACL'), async (req, res) => {
 		ok: true
 	});
 });
+
+router.patch('/:loginName/email/send', )
 
 module.exports = router;

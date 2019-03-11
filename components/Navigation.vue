@@ -86,7 +86,7 @@
 		left: 0;
 		padding: 0 5vw;
 		box-sizing: border-box;
-		z-index: 9;
+		z-index: 20;
 
 		display: flex;
 		justify-content: space-between;
@@ -132,7 +132,6 @@
 
 		&__auth {
 			position: relative;
-			padding: 0 30px;
 			display: flex;
 			align-items: stretch;
 			transition: all .4s ease;
@@ -159,10 +158,11 @@
 				font-size: 1.3rem;
 				font-weight: 100;
 
+				padding: 0 40px;
+
 				&--unauthed {
 					font-weight: 900;
 				}
-
 			}
 		}
 	}
@@ -302,6 +302,8 @@
 	import NanoBridge from "~/assets/images/NanoBridge.svg?inline";
 	import ClickOutside from "vue-click-outside";
 
+	import setDelay from "~/assets/js/setdelay";
+
 	export default {
 		data() {
 			return {
@@ -366,7 +368,7 @@
 					this.failReason = message;
 					this.failed = true;
 
-					setTimeout(() => this.failed = false, 1000);
+					setDelay(() => this.failed = false, 1000, 'loginFail');
 				}
 			},
 

@@ -1,5 +1,5 @@
 <template>
-	<div class="Post" :id="`post-${post.postId}`">
+	<section class="Post" :id="`post-${post.postId}`">
 		<img class="Post__profile" :src="user.profile" :alt="user.username">
 		<div class="Post__column">
 			<div class="Post__author">
@@ -26,13 +26,23 @@
 							삭제된 글
 						</template>
 						<template v-else>
-							asdf
+							ASDF
+							<!-- TODO add showing reply -->
 						</template>
 					</div>
 				</div>
 			</div>
 
-			<div class="Post__content Markdown" v-html="post.content"></div>
+			<div class="Post__content-wrapper" :style="{'max-height': expansionHeight}">
+				<div class="Post__content Markdown" v-html="post.content" ref="content"></div>
+				<div class="Post__content__more" v-if="textCropped">
+					<a @click="showMore">
+						<i class="mdi mdi-arrow-down"></i>
+						이 글을 더 읽기
+					</a>
+				</div>
+			</div>
+
 			<div class="Post__images"
 				:class="[`Post__images--${pickingImage}`, {'Post__images--plus': leftImage > 0}]"
 				v-if="post.images.length > 0">
@@ -46,7 +56,7 @@
 				</a>
 			</div>
 		</div>
-	</div>
+	</section>
 </template>
 
 <style lang="less" scoped>
@@ -58,6 +68,7 @@
 
 		color: #d0d0d0;
 		font-family: 'Noto Sans CJK KR', sans-serif;
+		overflow: hidden;
 
 		&__profile {
 			width: 64px;
@@ -69,6 +80,49 @@
 		&__column {
 			padding-left: 16px;
 			flex: 1;
+		}
+
+		&__content-wrapper {
+			max-height: 400px;
+			margin: 12px 0;
+			overflow: hidden;
+			position: relative;
+			transition: all .4s ease;
+		}
+
+		&__content {
+			&__more {
+				position: absolute;
+				left: 0;
+				right: 0;
+				bottom: 0;
+
+				display: flex;
+				align-items: center;
+				justify-content: center;
+
+				background: linear-gradient(to bottom, transparent 0%, rgba(22, 22, 22, 1) 75%);
+				height: 60px;
+
+				.mdi {
+					margin-right: 5px;
+				}
+
+				a {
+					color: #d0d0d0;
+					font-family: 'Noto Sans CJK KR', sans-serif;
+					font-size: .8rem;
+					font-weight: 800;
+					text-decoration: none;
+
+					cursor: pointer;
+					transition: all .4s ease;
+
+					&:hover {
+						color: #00bcd4;
+					}
+				}
+			}
 		}
 
 		&__username {
@@ -236,6 +290,7 @@
 	.Markdown {
 		mark {
 			background: #4dd0e1;
+			color: #202020;
 			padding: 0 3px;
 		}
 
@@ -247,6 +302,14 @@
 			padding: 2px 5px;
 			border-radius: 3px;
 		}
+
+		& > p:first-child {
+			margin-top: 0;
+		}
+
+		& > p:last-child {
+			margin-bottom: 0;
+		}
 	}
 </style>
 
@@ -255,6 +318,13 @@
 	moment.locale('ko');
 
 	export default {
+		data() {
+			return {
+				contentHeight: 400,
+				expansion: false
+			};
+		},
+
 		props: {
 			post: {
 				type: Object,
@@ -278,6 +348,14 @@
 
 			leftImage() {
 				return this.totalImage - this.pickingImage;
+			},
+
+			textCropped() {
+				return this.contentHeight > 400 && !this.expansion;
+			},
+
+			expansionHeight() {
+				return `${this.expansion ? this.contentHeight : 400}px`;
 			}
 		},
 
@@ -304,7 +382,16 @@
 
 			showImage(img) {
 
+			},
+
+			showMore() {
+				this.expansion = true;
 			}
+		},
+
+		mounted() {
+			const {height: contentHeight} = this.$refs.content.getBoundingClientRect();
+			this.contentHeight = contentHeight;
 		}
 	};
 </script>

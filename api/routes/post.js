@@ -7,6 +7,8 @@ const {exists, hexToDec, getImageExtension, mapPostObject,
 const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
+
+const ImageProcess = require('../utils/imageprocess');
 const {Router} = require('express');
 
 const router = new Router();
@@ -168,8 +170,10 @@ router.use((req, res, next) => {
 });
 
 router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req, res) => {
+	//TODO ratelimit (10 reqs / 1 min)
+
 	let {author, content, replyTo} = req.body;
-	if(typeof content !== 'string') {
+	if(typeof content !== 'string' || (content.length === 0 && req.files.length === 0)) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -182,7 +186,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 		author = req.loginName;
 	}
 
-	const markedContent = markdown(content);
+	const markedContent = markdown(content.slice(0, config.store.post.maxLength));
 	const images = [];
 
 	const postIdGen = (Date.now() * 100).toString(16) + Math.floor(Math.random() * 100).toString(16);
@@ -193,16 +197,26 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 		await promisify(fs.mkdir)(postBasedir);
 	}
 
-	for(let [fileIndex, file] of req.files.entries()) {
-		const ext = getImageExtension(file.mimetype);
-		const imageFile = `${fileIndex + 1}.${ext}`;
-		await promisify(fs.rename)(file.path, path.resolve(postBasedir, imageFile));
+	const {processed} = await ImageProcess.all(req.files, {
+		resize: true,
+		maxSize: {
+			width: 10000,
+			height: 10000
+		}
+	}, index => {
+		const imageFile = `${index + 1}.png`;
+		return {
+			imageFile,
+			fullPath: path.resolve(postBasedir, imageFile)
+		};
+	});
 
-		images.push({
-			id: fileIndex + 1,
+	images.push(...processed.map(({imageFile}, index) => {
+		return {
+			id: index + 1,
 			file: imageFile
-		});
-	}
+		};
+	}));
 
 	const post = {
 		author,
@@ -236,6 +250,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 
 	await db().collection('posts').insertOne(post);
 
+	//TODO apply rate limit / captcha & disable useless long posts
 	res.json({
 		ok: true,
 		post: sanitizePostObject(post)
@@ -243,6 +258,7 @@ router.post('/', requireACL('postWrite'), upload.array('images', 32), async (req
 });
 
 router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImages', 32), async (req, res) => {
+	//TODO ratelimit (10 reqs / 1 min)
 	const {postId} = req.params;
 	const {content, deleteImages} = req.body;
 	const setObject = {};
@@ -270,7 +286,7 @@ router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImage
 	const postBasedirExists = await exists(postBasedir);
 
 	if(typeof content === 'string') {
-		const markedContent = markdown(content);
+		const markedContent = markdown(content.slice(0, config.post.maxLength));
 		setObject.content = markedContent;
 	}
 
@@ -299,18 +315,25 @@ router.patch('/:postId(\\d+)/', requireACL('postUpdate'), upload.array('addImage
 		await promisify(fs.mkdir)(postBasedir);
 	}
 
-	for(let [fileIndex, file] of req.files.entries()) {
-		const ext = getImageExtension(file.mimetype);
-		const imageFile = `${fileIndex + 1}.${ext}`;
-		await promisify(fs.rename)(file.path, path.resolve(postBasedir, imageFile));
+	const {processed} = await ImageProcess.all(req.files, {
+		resize: true,
+		maxSize: {
+			width: 10000,
+			height: 10000
+		}
+	}, index => {
+		const imageFile = `${originalPost.lastImageId + index + 1}.png`;
+		return path.resolve(postBasedir, imageFile);
+	});
 
-		newImages.push({
-			id: fileIndex + 1 + originalPost.lastImageId,
-			file: imageFile
-		});
-	}
+	newImages.push(...processed.map((filepath, index) => {
+		return {
+			id: originalPost.lastImageId + index + 1,
+			filepath
+		};
+	}));
 
-	setObject.lastImageId = originalPost.lastImageId + req.files.length;
+	setObject.lastImageId = originalPost.lastImageId + processed.length;
 	setObject.images = newImages;
 
 	await db().collection('posts').findOneAndUpdate({postId}, {

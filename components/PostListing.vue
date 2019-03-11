@@ -1,7 +1,7 @@
 <template>
 	<div class="PostListing">
-		<editor v-if="acl.includes('postWrite') && ownList">
-		</editor>
+		<editor v-if="acl.includes('postWrite') && ownList" @send="choose(1)"></editor>
+
 		<template v-if="acl.includes('postRead')">
 			<div class="Container PostListing__header">
 				<div class="PostListing__chooser Chooser">
@@ -78,6 +78,17 @@
 								@navigate="scrollTop">
 							</listing-split>
 						</template>
+					</div>
+				</transition>
+
+				<transition name="Fade">
+					<div class="PostListing__empty" v-if="postsAppend.length === 0">
+						<span v-if="acl.includes('postWrite') && ownList">
+							어서 첫번째 글을 작성해보세요!
+						</span>
+						<span v-else>
+							아직 아무런 글도 없네요. 나중에 다시 확인해보세요!
+						</span>
 					</div>
 				</transition>
 
@@ -195,6 +206,16 @@
 				content: "";
 				flex: auto;
 			}
+		}
+
+		&__empty {
+			color: #606060;
+			text-align: center;
+			font-size: 4rem;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-weight: 100;
+
+			margin-top: 100px;
 		}
 	}
 
@@ -415,6 +436,8 @@
 
 				if(this.isAlbum) {
 					await this.loadNext(1);
+					this.$emit('pagination', this.updatedPagination);
+					//TODO fix bug when choosing album on 2 or higher page
 				}
 
 				this.$nextTick(() => {
@@ -463,8 +486,7 @@
 			'$route.query.page'() {
 				if(this.scrollWhenPageChange) {
 					this.$nextTick(() => {
-						const top = window.innerHeight * 0.6;
-						scrollTo(top);
+						scrollTo(window.innerHeight * 0.6);
 					});
 
 					this.scrollWhenPageChange = false;

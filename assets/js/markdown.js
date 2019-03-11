@@ -1,21 +1,140 @@
-const md = require('markdown-it');
-const mdEmoji = require('markdown-it-emoji');
-const mdIns = require('markdown-it-ins');
-const mdMark = require('markdown-it-mark');
+import Prism from "prismjs";
 
-const markdown = md('zero')
-	.set({
-		breaks: true,
-		linkify: true
-	})
-	.use(mdEmoji)
-	.use(mdIns)
-	.use(mdMark)
-	.enable([
-		'backticks', 'entity', 'emphasis',
-		'link', 'linkify', 'newline', 'strikethrough',
+Prism.languages.markdown = {
+	'blockquote': {
+		// > ...
+		pattern: /^>(?:[\t ]*>)*/m,
+		alias: 'punctuation'
+	},
+	'code': [
+		{
+			// Prefixed by 4 spaces or 1 tab
+			pattern: /^(?: {4}|\t).+/m,
+			alias: 'keyword'
+		},
+		{
+			// `code`
+			// ``code``
+			pattern: /``.+?``|`[^`\n]+`/,
+			alias: 'keyword'
+		},
+		{
+			// ```optional language
+			// code block
+			// ```
+			pattern: /^```[\s\S]*?^```$/m,
+			greedy: true,
+			inside: {
+				'code-block': {
+					pattern: /^(```.*(?:\r?\n|\r))[\s\S]+?(?=(?:\r?\n|\r)^```$)/m,
+					lookbehind: true
+				},
+				'code-language': {
+					pattern: /^(```).+/,
+					lookbehind: true
+				},
+				'punctuation': /```/
+			}
+		}
+	],
+	'list': {
+		// * item
+		// + item
+		// - item
+		// 1. item
+		pattern: /(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m,
+		lookbehind: true,
+		alias: 'punctuation'
+	},
+	'bold': {
+		// **strong**
+		// __strong__
 
-		'code', 'blockquote', 'list' // Allow block-level elems?
-	]);
+		// Allow only one line break
+		pattern: /(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+		lookbehind: true,
+		greedy: true,
+		inside: {
+			'punctuation': /^\*\*|^__|\*\*$|__$/
+		}
+	},
+	'emoji': {
+		pattern: /(^|[^\\]):[A-Za-z0-9_]+?:/,
+		lookbehind: true,
+		greedy: true
+	},
+	'italic': {
+		// *em*
+		// _em_
 
-module.exports = text => markdown.render(text);
+		// Allow only one line break
+		pattern: /(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+		lookbehind: true,
+		greedy: true,
+		inside: {
+			'punctuation': /^[*_]|[*_]$/
+		}
+	},
+	'strike': {
+		// ~~strike through~~
+		// ~strike~
+
+		// Allow only one line break
+		pattern: /(^|[^\\])(~~?)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+		lookbehind: true,
+		greedy: true,
+		inside: {
+			'punctuation': /^~~?|~~?$/
+		}
+	},
+	'mark': {
+		// ==mark==
+
+		// Allow only one line break
+		pattern: /(^|[^\\])(==?)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+		lookbehind: true,
+		greedy: true,
+		inside: {
+			'punctuation': /^==|==$/
+		}
+	},
+	'ins': {
+		// ++ins++
+
+		// Allow only one line break
+		pattern: /(^|[^\\])(\+\+?)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+		lookbehind: true,
+		greedy: true,
+		inside: {
+			'punctuation': /^\+\+|\+\+$/
+		}
+	},
+	'url': {
+		// [example](http://example.com "Optional title")
+		// [example] [id]
+		pattern: /\[[^\]]+\](?:\([^\s)]+\))/,
+		inside: {
+			'variable': {
+				pattern: /\[[^\]]+\]/
+			},
+			'urlstring': {
+				pattern: /(?:\([^\s)]+\))/
+			}
+		}
+	}
+};
+
+const inlineStyles = ['bold', 'italic', 'strike', 'mark', 'ins'];
+const inlineExclusives = ['bold', 'italic', 'strike', 'mark', 'ins', 'url', 'emoji'];
+
+inlineStyles.forEach(inline => {
+	inlineExclusives.forEach(target => {
+		if(inline !== target) {
+			Prism.languages.markdown[inline].inside[target] = Prism.languages.markdown[target];
+		}
+	});
+});
+
+Prism.languages.md = Prism.languages.markdown;
+
+export default Prism;
