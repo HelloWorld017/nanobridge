@@ -41,12 +41,18 @@
 						v-model="passwordInput"
 						placeholder="비밀번호">
 
-					<button class="LoginMenu__button"
-						:class="{'LoginMenu__button--fail': failed}"
-						@click.prevent="login">
+					<div class="LoginMenu__buttons">
+						<router-link class="LoginMenu__button LoginMenu__button--flat" to="/register">
+							회원가입 <i class="mdi mdi-arrow-left"></i>
+						</router-link>
 
-						로그인 <i class="mdi mdi-arrow-right"></i>
-					</button>
+						<button class="LoginMenu__button"
+							:class="{'LoginMenu__button--fail': failed}"
+							@click.prevent="login">
+
+							로그인 <i class="mdi mdi-arrow-right"></i>
+						</button>
+					</div>
 
 					<transition name="Fade">
 						<div class="LoginMenu__fail" v-if="failReason">
@@ -128,7 +134,7 @@
 			position: relative;
 			padding: 0 30px;
 			display: flex;
-			align-items: center;
+			align-items: stretch;
 			transition: all .4s ease;
 
 			&--opened {
@@ -145,6 +151,9 @@
 			}
 
 			&__state {
+				display: flex;
+				align-items: center;
+
 				cursor: pointer;
 				color: #d0d0d0;
 				font-size: 1.3rem;
@@ -195,16 +204,22 @@
 			margin-bottom: 5px;
 		}
 
+		&__buttons {
+			text-align: right;
+		}
+
 		&__button {
-			display: block;
+			display: inline-block;
+			padding: 10px 30px;
 			margin-top: 20px;
 			margin-left: auto;
-			padding: 10px 30px;
 			border: 1px solid #00bcd4;
 
 			color: #d0d0d0;
 			font-family: 'Noto Sans CJK KR', sans-serif;
 			font-size: .9rem;
+			font-weight: 500;
+			text-decoration: none;
 
 			cursor: pointer;
 			background: transparent;
@@ -225,6 +240,17 @@
 
 				&:hover {
 					background: #f44336;
+				}
+			}
+
+			&--flat {
+				border: none;
+				padding: 0;
+				margin-right: 10px;
+
+				&:hover {
+					background: transparent;
+					color: #00bcd4;
 				}
 			}
 		}

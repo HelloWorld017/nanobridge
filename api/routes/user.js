@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
 		return;
 	}
 
-	if(!/[a-zA-Z0-9-_.]{5,32}/.test(loginName) || username.length > 32) {
+	if(!/^[a-zA-Z0-9-_.]{5,32}$/.test(loginName) || username.length > 32) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'

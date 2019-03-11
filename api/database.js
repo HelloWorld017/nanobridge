@@ -10,8 +10,14 @@ class Database extends EventEmitter {
 	}
 
 	async init() {
+		let mongoUrl = 'mongodb://';
+		if(config.store.db.id) {
+			mongoUrl += `${config.store.db.id}:${config.store.db.pw}@`;
+		}
+		mongoUrl += `${config.store.db.url}:${config.store.db.port}`;
+
 		this.client = await MongoClient.connect(
-			`mongodb://${config.store.db.url}:${config.store.db.port}`,
+			mongoUrl,
 			{useNewUrlParser: true}
 		);
 
