@@ -10,23 +10,27 @@ const translations = {
 	6: "비밀번호는 20자리 이상이 되거나 1개 이상의 특수문자를 담고 있어야 합니다."
 };
 
-const mix = (ratio, start, end) => [...Array(start.length)].map((_, i) => start[i] * ratio + end[i] * ratio);
+const mix = (ratio, start, end) => [...Array(start.length)].map(
+	(_, i) => Math.round(start[i] * ratio + end[i] * (1 - ratio))
+);
 
 export default password => {
 	const {failedTests, passedTests} = owasp.test(password);
 	const ignoringTests = [2];
 
 	const failedFiltered = failedTests.filter(v => !ignoringTests.includes(v));
-	const passedFiltered = failedTests.filter(v => !ignoringTests.includes(v));
+	const passedFiltered = passedTests.filter(v => !ignoringTests.includes(v));
 	const testsFiltered = failedFiltered.concat(passedFiltered);
 
-	const strength = Math.floor((passedFiltered.length / failedFiltered.length) * 100) / 100;
-	const passed = failedTests.length > 0;
+	const strength = Math.floor(
+		(passedFiltered.length / testsFiltered.length) * 100
+	) / 100;
+	const passed = failedTests.length === 0;
 	const failedReason = passed ? '' : translations[failedTests[0]];
 
-	const startingColor = [244, 67, 54];
-	const endColor = [139, 195, 74];
-	const color = `rgb(${mix(strength, startingColor, endColor).join(', ')}`;
+	const startingColor = [139, 195, 74];
+	const endColor = [244, 67, 54];
+	const color = `rgb(${mix(strength, startingColor, endColor).join(', ')})`;
 
 	return {
 		percentage: strength,

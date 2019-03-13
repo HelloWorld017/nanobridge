@@ -136,7 +136,7 @@ router.get('/template', (req, res) => {
 		new EmailAuthTemplate({
 			token: '6f8adb01728ff',
 			username: 'Khinenw'
-		});
+		}).render()
 	);
 });
 

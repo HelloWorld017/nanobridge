@@ -3,48 +3,30 @@
 		<navigation connect-header></navigation>
 
 		<form class="Register" submit.prevent="submit">
-			<input class="Register__loginName Input"
-				:class="{'Input--failed': !isValidLoginName}"
-				type="text"
-				v-model="loginNameInput"
-				placeholder="아이디"
-				spellcheck="false" autocapitalize="off"
-				autocorrect="off" autocomplete="off"
-				maxlength="32">
+			<text-input v-model="loginNameInput" placeholder="아이디"
+				fail-message="아이디는 대소문자, 숫자, 하이픈(-), 밑줄(_), 온점(.)으로만 구성돼야 합니다."
+				:maxlen="32" :failed="!isValidLoginName" transcluent/>
 
-			<input class="Register__loginName Input"
-				type="text"
-				v-model="usernameInput"
-				placeholder="유저명"
-				spellcheck="false" autocapitalize="off"
-				autocorrect="off" autocomplete="off"
-				maxlength="32">
+			<text-input v-model="usernameInput" placeholder="유저명" :maxlen="32" transcluent/>
+			<text-input v-model="emailInput" type="email" placeholder="이메일"
+				fail-message="이메일에는 @이 포함되어 있어야 합니다." :failed="!isValidEmail" transcluent/>
 
-			<input class="Register__email Input"
-				:class="{'Input--failed': !isValidEmail}"
-				type="email"
-				v-model="emailInput"
-				placeholder="이메일">
+			<text-input v-model="passwordInput" type="password" placeholder="비밀번호" :maxlen="128"
+				:failed="!isValidPassword" :fail-message="strength.failedReason" transcluent>
 
-			<input class="Register__password Input"
-				type="password"
-				v-model="passwordInput"
-				placeholder="비밀번호"
-				maxlength="128">
-
-			<div class="PasswordMeter">
-				<div class="PasswordMeter__meter" :style="{
+				<div class="PasswordMeter" :style="{
 						transform: `scaleX(${strength.percentage})`,
 						background: `${strength.color}`
 					}">
 				</div>
-			</div>
+			</text-input>
 
-			<input class="Register__passwordVerify Input"
-				:class="{'Input--failed': !isPasswordVerified}"
-				type="password"
-				v-model="passwordVerify"
-				placeholder="비밀번호 확인">
+			<text-input v-model="passwordVerify" type="password" placeholder="비밀번호 확인"
+				fail-message="비밀번호와 같지 않습니다." :failed="!isPasswordVerified" transcluent/>
+
+			<button class="Button" :class="{'Button--hidden': !readyToSubmit}">
+				<i class="mdi mdi-arrow-right"></i> 회원가입
+			</button>
 		</form>
 
 		<div class="Main__background">
@@ -83,38 +65,31 @@
 		position: relative;
 		z-index: 3;
 
-		& > input:not(:first-child) {
+		& > .TextInput:not(:first-child) {
 			margin-top: 10px;
 		}
 	}
 
-	.Input {
-		border: 1px solid transparent;
-		background: rgba(33, 33, 33, .3);
+	.PasswordMeter {
+		position: absolute;
+		bottom: 0;
+		width: 100%;
+		height: 5px;
+		opacity: 0;
 
-		&:focus {
-			border: 1px solid #d0d0d0;
-			color: #d0d0d0;
-		}
+		transition: all .4s ease;
+		transform-origin: center center;
 
-		&--failed {
-			border: 1px solid #f44336;
-
-			&:focus {
-				background: #f44336;
-				border: 1px solid #f44336;
-			}
-		}
-
-		&::selection {
-			background: rgba(33, 33, 33, .7);
-			color: #d0d0d0;
+		input:focus ~ & {
+			opacity: 1;
 		}
 	}
 </style>
 
 <script>
 	import Navigation from "~/components/Navigation.vue";
+	import TextInput from "~/components/TextInput.vue";
+
 	import strength from "~/assets/js/strength";
 
 	export default {
@@ -143,14 +118,24 @@
 				return this.loginNameInput === '' || /^[a-zA-Z0-9-_.]+$/.test(this.loginNameInput);
 			},
 
+			isValidPassword() {
+				return this.passwordInput === '' || this.strength.passed;
+			},
+
 			strength() {
 				return strength(this.passwordInput);
+			},
+
+			readyToSubmit() {
+				return this.loginNameInput && this.usernameInput && this.emailInput &&
+					this.passwordInput && this.passwordVerify && this.isValidEmail &&
+					this.isValidLoginName && this.isValidPassword && this.isPasswordVerified;
 			}
 		},
 
 		watch: {
 			loginNameInput() {
-
+				//TODO check duplicate
 			},
 
 			emailInput() {
@@ -159,7 +144,8 @@
 		},
 
 		components: {
-			Navigation
+			Navigation,
+			TextInput
 		}
 	}
 </script>

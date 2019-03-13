@@ -29,17 +29,8 @@
 					@submit.prevent="login"
 					v-if="loginMenuOpened && !authState">
 
-					<input class="LoginMenu__loginName Input"
-						type="text"
-						v-model="loginNameInput"
-						placeholder="로그인 이름"
-						spellcheck="false" autocapitalize="off"
-						autocorrect="off" autocomplete="off">
-
-					<input class="LoginMenu__password Input"
-						type="password"
-						v-model="passwordInput"
-						placeholder="비밀번호">
+					<text-input class="LoginMenu__loginName" v-model="loginNameInput" placeholder="로그인 이름"/>
+					<text-input class="LoginMenu__password" v-model="passwordInput" placeholder="비밀번호"/>
 
 					<div class="LoginMenu__buttons">
 						<router-link class="LoginMenu__button LoginMenu__button--flat" to="/register">
@@ -299,8 +290,9 @@
 </style>
 
 <script>
-	import NanoBridge from "~/assets/images/NanoBridge.svg?inline";
 	import ClickOutside from "vue-click-outside";
+	import NanoBridge from "~/assets/images/NanoBridge.svg?inline";
+	import TextInput from "~/components/TextInput.vue";
 
 	import setDelay from "~/assets/js/setdelay";
 
@@ -379,7 +371,8 @@
 		},
 
 		components: {
-			NanoBridge
+			NanoBridge,
+			TextInput
 		},
 
 		directives: {
