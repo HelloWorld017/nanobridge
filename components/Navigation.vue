@@ -30,7 +30,8 @@
 					v-if="loginMenuOpened && !authState">
 
 					<text-input class="LoginMenu__loginName" v-model="loginNameInput" placeholder="로그인 이름"/>
-					<text-input class="LoginMenu__password" v-model="passwordInput" placeholder="비밀번호"/>
+					<text-input class="LoginMenu__password" v-model="passwordInput"
+						placeholder="비밀번호" type="password"/>
 
 					<div class="LoginMenu__buttons">
 						<router-link class="LoginMenu__button LoginMenu__button--flat" to="/register">
@@ -192,7 +193,7 @@
 
 	.LoginMenu {
 		&__loginName {
-			margin-bottom: 5px;
+			margin-bottom: 10px;
 		}
 
 		&__buttons {

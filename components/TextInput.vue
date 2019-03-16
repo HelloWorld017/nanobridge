@@ -40,6 +40,7 @@
 			color: #d0d0d0;
 			font-family: 'Noto Sans CJK KR', sans-serif;
 			font-size: .9rem;
+			font-weight: 500;
 			text-align: center;
 
 			outline: none;

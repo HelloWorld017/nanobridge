@@ -2,7 +2,8 @@
 	<main class="Main">
 		<navigation connect-header></navigation>
 
-		<form class="Register" submit.prevent="submit">
+		<form class="Register" @submit.prevent="submit" v-if="!authState">
+			<h1 class="Register__title">회원가입</h1>
 			<text-input v-model="loginNameInput" placeholder="아이디"
 				fail-message="아이디는 대소문자, 숫자, 하이픈(-), 밑줄(_), 온점(.)으로만 구성돼야 합니다."
 				:maxlen="32" :failed="!isValidLoginName" transcluent/>
@@ -28,6 +29,11 @@
 				<i class="mdi mdi-arrow-right"></i> 회원가입
 			</button>
 		</form>
+		<div class="Register" v-else>
+			<div class="LoggedIn">
+				이제 <nuxt-link to="/"><i class="mdi mdi-arrow-left"></i>돌아가셔도</nuxt-link> 괜찮습니다.
+			</div>
+		</div>
 
 		<div class="Main__background">
 		</div>
@@ -65,8 +71,14 @@
 		position: relative;
 		z-index: 3;
 
-		& > .TextInput:not(:first-child) {
-			margin-top: 10px;
+		& > .TextInput {
+			margin-bottom: 10px;
+		}
+
+		&__title {
+			color: #d0d0d0;
+			font-family: 'Noto Sans CJK KR', sans-serif;
+			font-weight: 100;
 		}
 	}
 
@@ -82,6 +94,68 @@
 
 		input:focus ~ & {
 			opacity: 1;
+		}
+	}
+
+	.Button {
+		position: relative;
+		margin-top: 10px;
+		padding: 10px;
+		width: 250px;
+
+		background: transparent;
+		border: 1px solid #00bcd4;
+		outline: none;
+		cursor: pointer;
+		transition: all .4s ease;
+
+		color: #d0d0d0;
+		font-family: 'Noto Sans CJK KR', sans-serif;
+		font-size: .8rem;
+		font-weight: 500;
+
+		&--hidden {
+			border: 1px solid #808080;
+			cursor: not-allowed;
+			color: #808080;
+		}
+
+		&:not(&--hidden):hover {
+			background: #00bcd4;
+			color: #202020;
+		}
+	}
+
+	.LoggedIn {
+		color: #d0d0d0;
+		font-family: 'Noto Sans CJK KR', sans-serif;
+		font-size: 3rem;
+		font-weight: 100;
+
+		& > a {
+			color: #00acc1;
+			font-weight: 600;
+			text-decoration: none;
+			position: relative;
+
+			&::after {
+				content: '';
+				display: block;
+
+				position: absolute;
+				left: 0;
+				right: 0;
+				bottom: -3px;
+				height: 3px;
+				background: #00acc1;
+
+				transition: all .4s ease;
+				transform: scaleX(0);
+			}
+
+			&:hover::after {
+				transform: scaleX(1);
+			}
 		}
 	}
 </style>
@@ -130,6 +204,10 @@
 				return this.loginNameInput && this.usernameInput && this.emailInput &&
 					this.passwordInput && this.passwordVerify && this.isValidEmail &&
 					this.isValidLoginName && this.isValidPassword && this.isPasswordVerified;
+			},
+
+			authState() {
+				return this.$store.getters['auth/authState'];
 			}
 		},
 
@@ -140,6 +218,12 @@
 
 			emailInput() {
 
+			}
+		},
+
+		method: {
+			submit() {
+				if(!this.readyToSubmit) return;
 			}
 		},
 
