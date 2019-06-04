@@ -2,7 +2,11 @@ const config = require('config');
 const ejs = require('ejs');
 const fs = require('fs');
 
-const TemplateFile = fs.readFileSync('./assets/template/mail.html', 'utf8');
+const TemplateFile = fs.readFileSync('./assets/template/Mail.html', 'utf8')
+
+class Mailer {
+
+}
 
 class Template {
 	constructor(context) {
@@ -21,6 +25,10 @@ class Template {
 	render() {
 		return ejs.render(TemplateFile, this);
 	}
+
+	send() {
+
+	}
 }
 
 class EmailAuthTemplate extends Template {
@@ -29,7 +37,7 @@ class EmailAuthTemplate extends Template {
 	}
 
 	get title() {
-		return '이메일 인증'
+		return '이메일 인증';
 	}
 
 	get content() {
@@ -40,7 +48,7 @@ class EmailAuthTemplate extends Template {
 	}
 
 	get link() {
-		return `${this.ctx.site.url}/auth/email/${this.ctx.token}`
+		return `${this.ctx.site.url}/auth/email/${this.ctx.token}`;
 	}
 
 	get linktext() {
@@ -48,4 +56,46 @@ class EmailAuthTemplate extends Template {
 	}
 }
 
-export default {EmailAuthTemplate};
+class EmailForgotIDTemplate extends Template {
+	constructor(context) {
+		super(context);
+	}
+
+	get title() {
+		return '아이디 찾기';
+	}
+
+	get content() {
+		return '회원님의 아이디는 다음과 같습니다.'
+	}
+
+	get code() {
+		return this.ctx.loginName;
+	}
+}
+
+class EmailForgotPasswordTemplate extends Template {
+	constructor(context) {
+		super(context);
+	}
+
+	get title() {
+		return '비밀번호 재설정';
+	}
+
+	get content() {
+		return '회원님의 비밀번호를 재설정하기 위해서 다음 링크 또는 버튼을 클릭해주세요.\n' +
+			'다음 링크는 12시간 동안 유효합니다.';
+	}
+
+	get link() {
+		return `${this.ctx.site.url}/forgot/email/${this.ctx.token}`;
+	}
+
+	get linktext() {
+		return '비밀번호 재설정하기'
+	}
+}
+
+
+export default {EmailAuthTemplate, EmailForgotIDTemplate, EmailForgotPasswordTemplate};

@@ -20,7 +20,7 @@ const upload = multer({
 	}
 });
 
-router.get('/:userLoginName', async (req, res) => {
+router.get('/:userLoginName([a-zA-Z0-9]+)', async (req, res) => {
 	const {userLoginName} = req.params;
 	const user = await db().collection('users').findOne({
 		loginName: userLoginName
@@ -37,6 +37,36 @@ router.get('/:userLoginName', async (req, res) => {
 	res.json({
 		ok: true,
 		user: sanitizeUserObject(user)
+	});
+});
+
+router.get('/$exists', async (req, res) => {
+	const {email, loginName} = req.query;
+	let exists = false;
+
+	if(typeof email === 'string') {
+		const user = await db().collection('users').findOne({
+			email
+		});
+
+		if(user) {
+			exists = true;
+		}
+	}
+
+	if(typeof loginName === 'string') {
+		const loginUser = await db().collection('users').findOne({
+			loginName
+		});
+
+		if(loginUser) {
+			exists = true;
+		}
+	}
+
+	res.json({
+		ok: true,
+		exists
 	});
 });
 
@@ -61,7 +91,7 @@ router.post('/', async (req, res) => { //TODO ratelimit (1 req / 3 min)
 		return;
 	}
 
-	if(!/[a-zA-Z0-9-_.]{5,32}/.test(loginName) || username.length > 32 || !email.includes('@')) {
+	if(!/[a-zA-Z0-9]{5,32}/.test(loginName) || username.length > 32 || !email.includes('@')) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -190,7 +220,7 @@ router.post('/:loginName/subuser', requireACL('subuserCreate'), async (req, res)
 		return;
 	}
 
-	if(typeof desiredLoginName !== 'string' || !/[a-zA-Z0-9-_.]{5,32}/.test(desiredLoginName)) {
+	if(typeof desiredLoginName !== 'string' || !/[a-zA-Z0-9]{5,32}/.test(desiredLoginName)) {
 		res.status(400).json({
 			ok: false,
 			reason: 'wrong-arguments'
@@ -450,7 +480,5 @@ router.patch('/:loginName/acl', requireACL('userACL'), async (req, res) => {
 		ok: true
 	});
 });
-
-router.patch('/:loginName/email/send', )
 
 module.exports = router;
