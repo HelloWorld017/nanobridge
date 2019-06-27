@@ -45,23 +45,23 @@
 			<div class="PostListing__list">
 				<transition name="Fade">
 					<div class="PostListing__articles" v-if="!isAlbum">
-						<template v-for="(postsInPage, index) in postsAppend">
+						<template v-for="(postsInPage, index) in posts">
 							<div class="PostListing__wrapper Container" v-for="post in postsInPage">
-								<post :key="`${post.postId}-post`" :post="post" :user="usersAppend[post.author]"></post>
+								<post :key="`${post.postId}-post`" :post="post" :user="users[post.author]"></post>
 							</div>
 
 							<listing-split
-								v-if="getPageByIndex(index) !== paginationAppend.max"
+								v-if="getPageByIndex(index) !== pagination.max"
 								:link="getPageLink(getPageByIndex(index + 1))"
 								:page="getPageByIndex(index)"
-								:max="paginationAppend.max"
+								:max="pagination.max"
 								@navigate="scrollTop">
 							</listing-split>
 						</template>
 					</div>
 
 					<div class="PostListing__album" v-else>
-						<template v-for="(postsInPage, index) in postsAppend">
+						<template v-for="(postsInPage, index) in posts">
 							<div class="PostListing__albumPage Container">
 								<post-album
 									:key="`${post.postId}-post`"
@@ -71,10 +71,10 @@
 							</div>
 
 							<listing-split
-								v-if="getPageByIndex(index) !== paginationAppend.max"
+								v-if="getPageByIndex(index) !== pagination.max"
 								:link="getPageLink(getPageByIndex(index + 1))"
 								:page="getPageByIndex(index)"
-								:max="paginationAppend.max"
+								:max="pagination.max"
 								@navigate="scrollTop">
 							</listing-split>
 						</template>
@@ -82,19 +82,20 @@
 				</transition>
 
 				<transition name="Fade">
-					<div class="PostListing__empty" v-if="postsAppend.length === 0">
+					<div class="PostListing__empty" v-if="posts.length === 0">
 						<span v-if="acl.includes('postWrite') && ownList">
 							어서 첫번째 글을 작성해보세요!
 						</span>
 						<span v-else>
-							아직 아무런 글도 없네요. 나중에 다시 확인해보세요!
+							아직 아무런 글도 없네요.<br>
+							나중에 다시 확인해보세요!
 						</span>
 					</div>
 				</transition>
 
 				<pagination-trigger
 					ref="trigger"
-					:next="paginationAppend.current < paginationAppend.max"
+					:next="pagination.current < pagination.max"
 					:load-next="loadNext">
 				</pagination-trigger>
 			</div>
@@ -331,9 +332,7 @@
 		data() {
 			return {
 				chosen: 1,
-				additionalPosts: [],
-				additionalUsers: {},
-				updatedPagination: null,
+				loadRequestFinished: false,
 				scrollWhenPageChange: false
 			};
 		},
@@ -382,30 +381,20 @@
 				return this.chosen === 2;
 			},
 
+			initialPage() {
+				return parseInt(this.$route.query.page) || 1;
+			},
+
 			isPageMode() {
 				return !!this.$route.query.page;
-			},
-
-			usersAppend() {
-				if(this.isAlbum) return this.additionalUsers;
-				return Object.assign({}, this.users, this.additionalUsers);
-			},
-
-			postsAppend() {
-				if(this.isAlbum) return this.additionalPosts;
-				return [this.posts].concat(this.additionalPosts);
-			},
-
-			paginationAppend() {
-				return this.updatedPagination || this.pagination;
 			},
 
 			paginationItems() {
 				let items = [];
 
 				const min = 1;
-				const current = this.paginationAppend.current;
-				const max = this.paginationAppend.max;
+				const current = this.pagination.current;
+				const max = this.pagination.max;
 
 				if(current - 3 > min + 1) {
 					items.push(min, null);
@@ -429,24 +418,32 @@
 		},
 
 		methods: {
+			clear() {
+				const pagination = this.pagination;
+				pagination.current = this.initialPage;
+
+				this.$emit('update', 'pagination', pagination);
+				this.$emit('update', 'posts', []);
+				this.$emit('update', 'users', {});
+			},
+
 			async choose(i) {
 				this.chosen = i;
-				this.additionalPosts = [];
-				this.updatedPagination = null;
+				this.clear();
+
+				this.$router.push('?page=1');
 
 				if(this.isAlbum) {
 					await this.loadNext(1);
-					this.$emit('pagination', this.updatedPagination);
-					//TODO fix bug when choosing album on 2 or higher page
 				}
 
 				this.$nextTick(() => {
-					this.$refs.trigger.refresh();
+					this.loadNext(this.initialPage);
 				});
 			},
 
 			getPageByIndex(index) {
-				return index + this.pagination.current;
+				return index + this.initialPage;
 			},
 
 			getPageLink(page) {
@@ -454,22 +451,31 @@
 			},
 
 			async loadNext(page = null) {
-				const nextPage = page === null ? this.paginationAppend.current + 1 : page;
+				if(!this.loadRequestFinished) return;
+
+				this.loadRequestFinished = false;
+
+				const nextPage = page === null ? this.pagination.current + 1 : page;
 				const newPage = await this.$axios.$get(`${this.apiContextAppend}page=${nextPage}`);
+				const newPosts = this.posts;
 
 				if(newPage.posts.length !== 0) {
-					this.additionalPosts.push(newPage.posts);
+					newPosts.push(newPage.posts);
+
+					this.$emit('update', 'posts', newPosts);
 				}
-				this.additionalUsers = Object.assign({}, this.additionalUsers, newPage.users);
-				this.updatedPagination = newPage.pagination;
+
+				this.$emit('update', 'users', Object.assign({}, this.users, newPage.users));
+				this.$emit('update', 'pagination', newPage.pagination);
+
+				this.loadRequestFinished = true;
 			},
 
 			refresh() {
-				this.additionalPosts = [];
-				this.updatedPagination = null;
+				this.clear();
 
 				this.$nextTick(() => {
-					this.$refs.trigger.refresh();
+					this.loadNext(this.initialPage);
 				});
 			},
 

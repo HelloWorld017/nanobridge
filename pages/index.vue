@@ -15,7 +15,7 @@
 		</header>
 
 		<div class="Documents">
-			<post-listing ref="listing" v-bind="posts" own-list></post-listing>
+			<post-listing ref="listing" v-bind="posts" @update="update" own-list></post-listing>
 		</div>
 	</main>
 </template>
@@ -135,8 +135,15 @@
 		async asyncData({$axios, query}) {
 			const params = query.page ? {page: query.page} : {};
 			const posts = await $axios.$get('/api/post/', {params});
+			posts.posts = [posts.posts];
 
 			return {posts};
+		},
+
+		methods: {
+			update(key, value) {
+				this.posts[key] = value;
+			}
 		},
 
 		watch: {

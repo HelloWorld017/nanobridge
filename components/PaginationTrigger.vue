@@ -56,7 +56,6 @@
 		data() {
 			return {
 				observer: null,
-				loadRequestFinished: false,
 				loadFulfilled: false
 			};
 		},
@@ -72,7 +71,6 @@
 
 		methods: {
 			async preload(entries) {
-				if(!this.loadRequestFinished) return;
 				if(!this.next) {
 					this.loadFulfilled = true;
 					return;
@@ -88,9 +86,7 @@
 					}
 				}
 
-				this.loadRequestFinished = false;
 				await this.loadNext();
-				this.loadRequestFinished = true;
 				setTimeout(() => {
 					if(!this.loadFulfilled) {
 						this.preload();
@@ -110,7 +106,6 @@
 				threshold: 0
 			});
 			this.observer.observe(this.$refs.trigger);
-			this.loadRequestFinished = true;
 			this.preload();
 		}
 	};
