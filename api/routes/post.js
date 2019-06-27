@@ -25,35 +25,38 @@ const upload = multer({
 router.use((req, res, next) => {
 	req.nanoPosts = {
 		getPage() {
-			let page = 1;
+			let from = null;
 
-			if(req.query.page) {
-				const parsedPage = parseInt(req.query.page);
-				if(isFinite(parsedPage) && parsedPage > 0) {
-					page = parsedPage;
+			if(req.query.from) {
+				const parsedFrom = parseInt(req.query.page);
+				if(isFinite(parsedFrom) && parsedFrom > 0) {
+					from = parsedFrom;
 				}
 			}
 
-			return page;
+			return from;
 		},
 
 		async getDocuments(query, countNeeded = true) {
+			const andQueries = [query];
+
+			const from = this.getPage();
+			if(from) andQueries.push({
+				createdAt: {$lt: from}
+			});
+
 			const isAlbum = req.query.album === '1';
-			const albumQuery = {
-				$and: [
-					query,
-					{images: {$not: {$size: 0}}}
-				]
-			};
-			const targetQuery = isAlbum ? albumQuery : query;
+			if(isAlbum) andQueries.push({
+				images: {$not: {$size: 0}}
+			});
+
+			const targetQuery = {$and: andQueries};
 			const targetPerPage = config.store.listing[isAlbum ? 'albumsPerPage' : 'postsPerPage'];
 
-			const page = this.getPage();
 			const posts = await db().collection('posts')
 				.find(targetQuery)
 				.limit(targetPerPage)
 				.sort({createdAt: -1})
-				.skip((page - 1) * targetPerPage)
 				.toArray();
 
 			const counts = {};
@@ -64,16 +67,11 @@ router.use((req, res, next) => {
 				counts.enabled = true;
 			}
 
-			if(counts.target === undefined) {
-				counts.target = await db().collection('posts').countDocuments(targetQuery);
-				counts.enabled = false;
-			}
-
 			const maxPages = Math.ceil(counts.target / targetPerPage);
 			return Object.assign({
 				ok: true,
 				pagination: {
-					current: page,
+					from,
 					max: Math.max(1, maxPages),
 					perPage: targetPerPage
 				},
