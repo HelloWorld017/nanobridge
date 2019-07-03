@@ -37,42 +37,92 @@ router.use((req, res, next) => {
 			return from;
 		},
 
+		async getCounts(query, isAlbum, enabled) {
+			const albumsPerPage = config.store.listing.albumsPerPage;
+			const postsPerPage = config.store.listing.postsPerPage;
+
+			const maxCounting = config.store.listing.countingPages;
+
+			const counts = {
+				pageMax: maxCounting,
+				post: {},
+				album: {},
+				target: {}
+			};
+
+			counts.post.max = maxCounting * postsPerPage;
+			counts.post.value = await db().collection('posts').countDocuments(
+				query,
+				{limit: counts.postMax}
+			);
+
+			counts.album.max = maxCounting * albumsPerPage;
+			counts.album.value = await db().collection('posts').countDocuments(
+				{$and: [
+					query, {
+						images: {$not: {$size: 0}}
+					}
+				]},
+				{limit: counts.albumMax}
+			);
+
+			if(enabled) {
+				counts.enabled = true;
+				counts.post.estimated = await db().collection('posts').estimatedDocumentCount();
+			}
+
+			counts.target.max = isAlbum ? counts.albumMax : counts.postMax;
+			counts.target.value = isAlbum ? counts.album : counts.post;
+
+			return counts;
+		},
+
 		async getDocuments(query, countNeeded = true) {
 			const andQueries = [query];
-
-			const from = this.getPage();
-			if(from) andQueries.push({
-				createdAt: {$lt: from}
-			});
 
 			const isAlbum = req.query.album === '1';
 			if(isAlbum) andQueries.push({
 				images: {$not: {$size: 0}}
 			});
 
-			const targetQuery = {$and: andQueries};
-			const targetPerPage = config.store.listing[isAlbum ? 'albumsPerPage' : 'postsPerPage'];
+			const targetQuery = andQueries.slice();
 
+			const from = this.getPage();
+			if(from) andQueries.push({
+				createdAt: {$lt: from}
+			});
+
+			const targetPerPage = config.store.listing[isAlbum ? 'albumsPerPage' : 'postsPerPage'];
 			const posts = await db().collection('posts')
-				.find(targetQuery)
+				.find({$and: andQueries})
 				.limit(targetPerPage)
 				.sort({createdAt: -1})
 				.toArray();
 
-			const counts = {};
-			if(countNeeded) {
-				counts.post = await db().collection('posts').countDocuments(query);
-				counts.album = await db().collection('posts').countDocuments(albumQuery);
-				counts.target = isAlbum ? counts.album : counts.post;
-				counts.enabled = true;
+			const counts = await this.getCounts(query, isAlbum, countNeeded);
+			let isEnd = true;
+
+			const nextPage = posts[posts.length - 1].createdAt;
+			if(nextPage) {
+				const nextCount = await db().collection('posts').countDocuments(
+					{$and: [
+						...targetQuery,
+						{createdAt: {$lt: nextPage}}
+					]},
+					{limit: 1}
+				);
+
+				isEnd = nextCount > 0;
 			}
 
-			const maxPages = Math.ceil(counts.target / targetPerPage);
+			const maxPages = Math.max(1, Math.ceil(counts.target / targetPerPage));
 			return Object.assign({
 				ok: true,
 				pagination: {
 					from,
-					max: Math.max(1, maxPages),
+					isEnd,
+					next: nextPage,
+					max: maxPages,
 					perPage: targetPerPage
 				},
 				counts

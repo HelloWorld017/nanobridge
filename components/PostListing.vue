@@ -363,6 +363,7 @@
 			pagination: {
 				type: Object,
 				default: {
+					from: null,
 					current: 1,
 					max: 1,
 					perPage: 25

@@ -34,7 +34,8 @@ module.exports = {
 
 		listing: {
 			postsPerPage: 10,
-			albumsPerPage: 30
+			albumsPerPage: 30,
+			countingPages: 100
 		},
 
 		acl: {

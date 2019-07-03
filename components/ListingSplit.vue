@@ -68,7 +68,7 @@
 			},
 
 			max: {
-				type: Number,
+				type: String,
 				required: true
 			},
 
