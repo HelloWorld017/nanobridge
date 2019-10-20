@@ -7,6 +7,8 @@ const multer = require('multer');
 const path = require('path');
 const {promisify} = require('util');
 const scrypt = require('scrypt-js');
+
+const ImageProcess = require('../utils/imageprocess');
 const {Router} = require('express');
 
 const router = new Router();
@@ -417,7 +419,7 @@ router.patch('/:loginName/background', requireACL('userUpdate'), upload.single('
 		loginName: req.authedUser.loginName
 	}, {
 		$set: {
-			profile: success ? `/static_user/${filename}` : '/defaults/background.jpg'
+			background: success ? `/static_user/${filename}` : '/defaults/background.jpg'
 		}
 	});
 

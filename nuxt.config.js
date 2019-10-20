@@ -1,3 +1,5 @@
+const config = require('./config.json');
+
 module.exports = {
 	head: {
 		title: 'nanobridge',
@@ -62,5 +64,9 @@ module.exports = {
 	modules: [
 		'@nuxtjs/axios',
 		'nuxt-svg'
-	]
+	],
+
+	axios: {
+		 baseURL: config.site.url
+	}
 };
