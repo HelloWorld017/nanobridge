@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
 	const phaseUser = await db().collection('registrationPhase').findOne(query);
 	const authingUser = user || phaseUser;
 
-	if(!authingUser || user.subUserOf) {
+	if(!authingUser || (user && user.subUserOf)) {
 		res.status(403).json({
 			ok: false,
 			reason: 'wrong-id-or-password'
@@ -118,7 +118,7 @@ router.get('/email/:emailAuthToken', async (req, res) => {
 	if(!user) {
 		res.json({
 			ok: false,
-			reason: 'wrong-token'
+			reason: 'wrong-token-or-expired'
 		});
 		return;
 	}

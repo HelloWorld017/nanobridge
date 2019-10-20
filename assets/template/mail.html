@@ -14,16 +14,26 @@
 				<%- content %>
 			</p>
 
-			<div class="Content__code">
-				<a class="Button" href="<%= link %>"><%= linktext %></a>
-				<br>
-				<span class="Button__alternative">
-					또는
-					<a class="Button__alternative__link" href="<%= link %>">
-						<%= link %>
-					</a> 클릭
-				</span>
-			</div>
+			<% if(code) { %>
+				<div class="Content__code">
+					<code class="Code">
+						<%= code %>
+					</code>
+				</div>
+			<% } %>
+
+			<% if(link) { %>
+				<div class="Content__code">
+					<a class="Button" href="<%= link %>"><%= linktext %></a>
+					<br>
+					<span class="Button__alternative">
+						또는
+						<a class="Button__alternative__link" href="<%= link %>">
+							<%= link %>
+						</a> 클릭
+					</span>
+				</div>
+			<% } %>
 
 			<p class="Content__body">
 				<%= site.name %> 글 나눔터를 이용해주시는 여러분께 언제나 큰 감사를 드립니다.
@@ -57,7 +67,11 @@
 	}
 
 	.Nanomail__header {
-		font-family: 'Titillium Web', sans-serif;
+		font-family: 'Titillium Web', 'Saira', 'Noto Sans CJK KR',
+			'Apple SD Gothic Neo', 'KoPubDotum Medium',
+			'나눔바른고딕', 'NanumBarunGothic', 'Nanum Barun Gothic',
+			'나눔고딕', 'NanumGothic',
+			'맑은고딕', 'Malgun Gothic', sans-serif;
 		text-align: center;
 		color: #d0d0d0;
 		font-size: 1.3rem;
@@ -72,6 +86,11 @@
 		margin-bottom: 10px;
 		padding: 10px 20px;
 		text-decoration: none;
+		transition: all .4s ease;
+	}
+
+	.Button:hover {
+		background: #f1f2f3;
 	}
 
 	.Button__alternative {
@@ -82,6 +101,23 @@
 		display: inline-block;
 		margin-top: 10px;
 		color: #00bcd4;
+	}
+
+	.Code {
+		background: #d0d0d0;
+		border-radius: 10px;
+		color: #202020;
+		display: inline-block;
+		font-size: 1.3rem;
+		font-family: 'Noto Sans CJK KR',
+			'Apple SD Gothic Neo', 'KoPubDotum Medium',
+			'나눔바른고딕', 'NanumBarunGothic', 'Nanum Barun Gothic',
+			'나눔고딕', 'NanumGothic',
+			'맑은고딕', 'Malgun Gothic', sans-serif;
+		font-weight: 500;
+		margin-bottom: 10px;
+		padding: 5px 10px;
+		text-decoration: none;
 	}
 
 	.Content__code {
