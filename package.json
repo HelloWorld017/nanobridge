@@ -22,7 +22,7 @@
     "express": "^4.16.4",
     "jimp": "^0.6.0",
     "jsonwebtoken": "^8.4.0",
-    "markdown-it": "^8.4.2",
+    "markdown-it": "^12.3.2",
     "markdown-it-emoji": "^1.4.0",
     "markdown-it-ins": "^2.0.0",
     "markdown-it-mark": "^2.0.0",
