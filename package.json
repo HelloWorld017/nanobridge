@@ -21,7 +21,7 @@
     "emoji-mart-vue": "^2.6.6",
     "express": "^4.16.4",
     "jimp": "^0.6.0",
-    "jsonwebtoken": "^8.4.0",
+    "jsonwebtoken": "^9.0.0",
     "markdown-it": "^8.4.2",
     "markdown-it-emoji": "^1.4.0",
     "markdown-it-ins": "^2.0.0",
